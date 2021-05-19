@@ -3,6 +3,11 @@ from openpyxl.styles import PatternFill
 from openpyxl.comments import Comment
 import pandas
 import os
+import win32api
+from win32com import client
+
+excel = client.DispatchEx("Excel.Application")
+excel.Visible = 0
 
 #Main files directory
 MainDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_python/"
@@ -14,7 +19,7 @@ WorkSheetName = "Tie-In list"
 Col_lett = "K"
 #Range of column with names of files
 ColStart = 12
-ColEnd = 24
+ColEnd = 15
 #Template name
 TemplateName = "Karta technologiczna_wpalki.xlsx"
 #Name of template worksheet 
@@ -48,6 +53,12 @@ for z in range(ColStart,ColEnd):
                 NewWorksheet[x].fill = PatternFill(fgColor=MyColor, fill_type="solid")
                 NewWorksheet[x].comment = comment
                 NewFile.save(FilesDir + file + ".xlsx")
+                path = str(FilesDir + file + ".pdf")
+                WbPrint = excel.Workbooks.Open(FilesDir + file + ".xlsx")
+                WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+                WbPrint.SaveAs(path,FileFormat=57)
+                WbPrint.Close()
+                excel.Quit()
                 NewFile.close()
     else:
         #If no so create one
@@ -59,6 +70,12 @@ for z in range(ColStart,ColEnd):
         for x,y in Map.items():
             NewWorksheet[x].value = worksheet[y + str(z)].value
             NewFile.save(FilesDir + file + ".xlsx")
+            path = str(FilesDir + file + ".pdf")
+            WbPrint = excel.Workbooks.Open(FilesDir + file + ".xlsx")
+            WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+            WbPrint.SaveAs(path,FileFormat=57)
+            WbPrint.Close()
+            excel.Quit()
             NewFile.close()
     i += 1
     #Close list
