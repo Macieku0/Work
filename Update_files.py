@@ -19,7 +19,7 @@ WorkSheetName = "Tie-In list"
 Col_lett = "K"
 #Range of column with names of files
 ColStart = 12
-ColEnd = 15
+ColEnd = 320
 #Template name
 TemplateName = "Karta technologiczna_wpalki.xlsx"
 #Name of template worksheet 
@@ -46,6 +46,7 @@ for z in range(ColStart,ColEnd):
         print(file + ".xlsx" + " already exist")
         NewFile = openpyxl.load_workbook(FilesDir + file + ".xlsx")
         NewWorksheet = NewFile[TemplateWorkSheetName]
+        #Fullfil created files with data from list
         for x,y in Map.items():
             if NewWorksheet[x].value != worksheet[y + str(z)].value:
                 comment = Comment('Previous value = ' + str(NewWorksheet[x].value),'automatic inspect')
@@ -59,6 +60,7 @@ for z in range(ColStart,ColEnd):
                 WbPrint.SaveAs(path,FileFormat=57)
                 WbPrint.Close()
                 excel.Quit()
+                print(file + ".xlsx" + " has changed")
                 NewFile.close()
     else:
         #If no so create one
