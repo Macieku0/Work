@@ -22,36 +22,31 @@ FilesDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN
 #List of files to create / update
 FilesList = []
 #Map of cells connection between list and template
+#TODO Map rest of the cells
 Map = {'A7':'C','B7':'G','C7':'D'}
 
 #Creating a list of all files name
-for x in range(ColStart,ColEnd):
-    wb = openpyxl.load_workbook(MainDir + ListName)
-    worksheet = wb[WorkSheetName]
-    FilesList.append(worksheet[Col_lett + str(x)].value)
-    wb.close()
-
-#Creating files for each element in the list
 source = openpyxl.load_workbook(MainDir + TemplateName)
-for file in FilesList:
-    #Checking if file exist
+wb = openpyxl.load_workbook(MainDir + ListName)
+worksheet = wb[WorkSheetName]
+i = 0
+for z in range(ColStart,ColEnd):
+    file = worksheet[Col_lett + str(z)].value
+    #Check if file already exist
     if os.path.isfile(FilesDir + file + ".xlsx"):
         print(file + ".xlsx" + " already exist")
     else:
         #If no so create one
         source.save(FilesDir + file + ".xlsx")
         source.close()
-
-#Fullfil created files with data from list
-i = 0
-for z in range(ColStart,ColEnd):
-    wb = openpyxl.load_workbook(MainDir + ListName)
-    wbWroksheet = wb[WorkSheetName]
-    NewFile = openpyxl.load_workbook(FilesDir + FilesList[i] + ".xlsx")
+    #Fullfil created files with data from list
+    NewFile = openpyxl.load_workbook(FilesDir + file + ".xlsx")
     NewWorksheet = NewFile[TemplateWorkSheetName]
     for x,y in Map.items():
-        NewWorksheet[x].value = wbWroksheet[y + str(z)].value
-        NewFile.save(FilesDir + FilesList[i] + ".xlsx")
+        NewWorksheet[x].value = worksheet[y + str(z)].value
+        NewFile.save(FilesDir + file + ".xlsx")
         NewFile.close()
     i += 1
-    wb.close()
+#Close list
+wb.close()
+
