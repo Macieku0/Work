@@ -1,4 +1,6 @@
 import openpyxl
+from openpyxl.styles import PatternFill
+from openpyxl.comments import Comment
 import pandas
 import os
 
@@ -21,6 +23,8 @@ TemplateWorkSheetName = "KARTA"
 FilesDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_python/WYDRUKI/"
 #List of files to create / update
 FilesList = []
+#Change color marker
+MyColor = "E7CE63"
 #Map of cells connection between list and template
 #TODO Map rest of the cells
 Map = {'A7':'C','B7':'G','C7':'D'}
@@ -35,18 +39,28 @@ for z in range(ColStart,ColEnd):
     #Check if file already exist
     if os.path.isfile(FilesDir + file + ".xlsx"):
         print(file + ".xlsx" + " already exist")
+        NewFile = openpyxl.load_workbook(FilesDir + file + ".xlsx")
+        NewWorksheet = NewFile[TemplateWorkSheetName]
+        for x,y in Map.items():
+            if NewWorksheet[x].value != worksheet[y + str(z)].value:
+                comment = Comment('Previous value = ' + str(NewWorksheet[x].value),'automatic inspect')
+                NewWorksheet[x].value = worksheet[y + str(z)].value
+                NewWorksheet[x].fill = PatternFill(fgColor=MyColor, fill_type="solid")
+                NewWorksheet[x].comment = comment
+                NewFile.save(FilesDir + file + ".xlsx")
+                NewFile.close()
     else:
         #If no so create one
         source.save(FilesDir + file + ".xlsx")
         source.close()
-    #Fullfil created files with data from list
-    NewFile = openpyxl.load_workbook(FilesDir + file + ".xlsx")
-    NewWorksheet = NewFile[TemplateWorkSheetName]
-    for x,y in Map.items():
-        NewWorksheet[x].value = worksheet[y + str(z)].value
-        NewFile.save(FilesDir + file + ".xlsx")
-        NewFile.close()
+        #Fullfil created files with data from list
+        NewFile = openpyxl.load_workbook(FilesDir + file + ".xlsx")
+        NewWorksheet = NewFile[TemplateWorkSheetName]
+        for x,y in Map.items():
+            NewWorksheet[x].value = worksheet[y + str(z)].value
+            NewFile.save(FilesDir + file + ".xlsx")
+            NewFile.close()
     i += 1
-#Close list
+    #Close list
 wb.close()
 
