@@ -33,8 +33,13 @@ FilesList = []
 #Change color marker
 MyColor = "E7CE63"
 #Map of cells connection between list and template
-#TODO Map rest of the cells
-Map = {'A7':'C','B7':'G','C7':'D'}
+#TODO #1 Do double translation in excel #2 Map rest of the cells
+Map = {
+'D2':'BE',  #Instalation name
+'Q3':'AM',  #New pipeline name
+'A7':'C',   #Next No acc. to tie-in  point list
+'B7':'G',
+'C7':'D'}
 
 #Creating a list of all files name
 source = openpyxl.load_workbook(MainDir + TemplateName)
