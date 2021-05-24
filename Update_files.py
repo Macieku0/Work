@@ -35,11 +35,38 @@ MyColor = "E7CE63"
 #Map of cells connection between list and template
 #TODO #1 Do double translation in excel #2 Map rest of the cells
 Map = {
-'D2':'BE',  #Instalation name
-'Q3':'AM',  #New pipeline name
-'A7':'C',   #Next No acc. to tie-in  point list
-'B7':'G',
-'C7':'D'}
+'D2':'AC',  #Installation name
+'Q3':'V',  #New pipeline name
+'A7':'A',   #Next No acc. to tie-in  point list
+'B7':'C',
+'C7':'B',
+'D7':'F',
+'F7':'D',
+'I7':'G',
+'K7':'Z',
+'L7':'J',
+'M7':'E',
+'N7':'Y',
+'O7':'K',
+'P7':'AA',
+'Q7':'AB',
+'R7':'W',
+'S7':'X',
+'I9':'L',
+'H12':'U',
+'A15':'L',
+'C15':'H',
+'D15':'M',
+'E15':'O',
+'F15':'Q',
+'G15':'N',
+'H15':'P',
+'I15':'E',
+'J15':'I',
+'L15':'R',
+'M15':'S',
+'N15':'T',
+'G25':'AD'}
 
 #Creating a list of all files name
 source = openpyxl.load_workbook(MainDir + TemplateName)
