@@ -16,16 +16,16 @@ MainDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_
 #List name
 ListName = "LISTA_WPALEK.xlsx"
 #Name of list worksheet
-WorkSheetName = "Tie-In list"
+WorkSheetName = "PY"
 #Letter of column with names for naming files
-Col_lett = "K"
+Col_lett = "C"
 #Range of column with names of files
-ColStart = 12
-ColEnd = 15
+ColStart = 7
+ColEnd = 368
 #Template name
-TemplateName = "Karta technologiczna_wpalki.xlsx"
+TemplateName = "karta_wpalki-24.05.2021.xlsx"
 #Name of template worksheet 
-TemplateWorkSheetName = "KARTA"
+TemplateWorkSheetName = "List1"
 #Files save / update directory
 FilesDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_python/WYDRUKI/"
 #List of files to create / update
@@ -35,7 +35,7 @@ MyColor = "E7CE63"
 #Map of cells connection between list and template
 #TODO #1 Do double translation in excel #2 Map rest of the cells
 Map = {
-'D2':'AC',  #Installation name
+'E2':'AC',  #Installation name
 'Q3':'V',  #New pipeline name
 'A7':'A',   #Next No acc. to tie-in  point list
 'B7':'C',
@@ -85,17 +85,16 @@ for z in range(ColStart,ColEnd):
         for x,y in Map.items():
             if NewWorksheet[x].value != worksheet[f'{y}{z}'].value:
                 comment = Comment(f'Previous value = {NewWorksheet[x].value}','automatic inspect')
-                NewWorksheet[x].value = worksheet[f'{y}{z})'].value
+                NewWorksheet[x].value = worksheet[f'{y}{z}'].value
                 NewWorksheet[x].fill = PatternFill(fgColor=MyColor, fill_type="solid")
                 NewWorksheet[x].comment = comment
-                NewFile.save(f'{NewFileName}.xlsx')
-                WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
-                WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
-                WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
-                WbPrint.Close()
-                excel.Quit()
-                print(f'{NewFileName}.xlsx has changed')
-                NewFile.close()
+        NewFile.save(f'{NewFileName}.xlsx')
+        WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
+        WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+        WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
+        WbPrint.Close()
+        excel.Quit()
+        NewFile.close()
     else:
         #If no so create one
         source.save(f'{NewFileName}.xlsx')
@@ -105,13 +104,13 @@ for z in range(ColStart,ColEnd):
         NewWorksheet = NewFile[TemplateWorkSheetName]
         for x,y in Map.items():
             NewWorksheet[x].value = worksheet[f'{y}{z}'].value
-            NewFile.save(f'{NewFileName}.xlsx')
-            WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
-            WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
-            WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
-            WbPrint.Close()
-            excel.Quit()
-            NewFile.close()
+        NewFile.save(f'{NewFileName}.xlsx')
+        WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
+        WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+        WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
+        WbPrint.Close()
+        excel.Quit()
+        NewFile.close()
     i += 1
     #Close list
 wb.close()
