@@ -34,21 +34,16 @@ def force(x):
         FxSin = (float(x[0]) * float(x[4]))
         FyCos = (float(x[1]) * float(-x[3]))
         FySin = (float(x[1]) * float(x[4]))
-        Axially = FxCos + FySin
-        Transversely = FxSin + FyCos
-        x['FX'] = Axially 
-        x['FY'] = Transversely
+        x['FX'] = FxCos + FySin
+        x['FY'] = FxSin + FyCos
         return x[['FX','FY']]
-
     else:
         FxCos = (float(x[0]) * float(x[3]))
         FxSin = (float(x[0]) * float(-x[4]))
         FyCos = (float(x[1]) * float(x[3]))
         FySin = (float(x[1]) * float(x[4]))
-        Axially = FxCos + FySin
-        Transversely = FxSin + FyCos
-        x['FX'] = Axially 
-        x['FY'] = Transversely
+        x['FX'] = FxCos + FySin
+        x['FY'] = FxSin + FyCos
         return x[['FX','FY']]
 
 #'Tag No.'  jest równie numerowi zamocowania
