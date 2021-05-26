@@ -7,8 +7,7 @@ import os
 #Split folder is for splited documents
 #Secondary folder is for documents that needs to be inserted between splited documents
 
-#Secondary files have to be named in specific format = "{Main File_name}_between.pdf"
-Directory  = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/split_merge"
+
 
 #Spliting pdf in two files: *_befor and *_after 
 def split(path,name,dir):
@@ -40,20 +39,21 @@ def merge(paths,name,dir):
     with open(result,'wb') as output:
         pdf_writer.write(output)
 
-
-
-#Main files directory
-MainDir = Directory + "/Main/"
-#Where should splitted files be stored
-SplitDir = Directory + "/Split/"
-#Secondary files to push into main documents directory
-SecondDir = Directory + "/Secondary/"
-#List of main documents
-MainList = []
-
-
-
 if __name__ == '__main__':
+    #Secondary files have to be named in specific format = "{Main File_name}_between.pdf"
+    Directory  = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/split_merge"
+    #Main files directory
+    MainDir = Directory + "/Main/"
+    #Where should splitted files be stored
+    SplitDir = Directory + "/Split/"
+    #Secondary files to push into main documents directory
+    SecondDir = Directory + "/Secondary/"
+    #List of main documents
+    MainList = []
+
+
+
+
     #Listing all main documents
     for root, dirs,files in os.walk(MainDir):
         for file in files:

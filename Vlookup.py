@@ -14,7 +14,8 @@ df_b = pd.read_excel(f'C:/Dev/Test/{file_B}')
 
 output = pd.merge(df_a,df_b[['Nr','Koszt']],on='Nr', how='left')
 output['Różnica'] = output['Koszt_x'] - output['Koszt_y']
-print(output)
+
 
 output = output.replace(np.nan,'',regex=True)
+
 output.to_excel(f'C:/Dev/Test/{summary}', index=False)
