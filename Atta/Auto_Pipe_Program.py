@@ -8,6 +8,7 @@ from tkinter import filedialog
 from PIL import ImageTk, Image
 from timeit import default_timer
 import pathlib
+from functools import reduce
 
 def cos(x):
     return math.cos(math.radians(float(x))) 
@@ -53,29 +54,55 @@ if __name__ == '__main__':
         #Nazwa raportu wyjściowego
         Out = 'Raport_policzony.xlsx'
 
-        #'Tag No.'  jest równie numerowi zamocowania
+        #Wczytanie pliku pdms i podział na kolumny
         PdmsFile = pd.read_csv(f'{PDMS}',sep='|',decimal='.')
+        #Czyszczenie danych
         PdmsFile = PdmsFile.replace("=","'=",regex=True)
         PdmsFile = PdmsFile.replace('degree','',regex=True)
         PdmsFile['ORIANGLE'] = [clean_angles(oriangle) for oriangle in PdmsFile['ORIANGLE']]
         PdmsFile['NAME'] = [clean_name(name) for name in PdmsFile['NAME']]
+        #Obliczanie sinusów i cosinusów
         PdmsFile['SIN'] = [sin(oriangle) for oriangle in PdmsFile['ORIANGLE']]
         PdmsFile['COS'] = [cos(oriangle) for oriangle in PdmsFile['ORIANGLE']]
+        #Zmiana nazwy kolumny
         PdmsFile.rename(columns={'DTXR':'Description'},inplace=True)
 
+        #Wczytanie pliku autopipe
         AutoPipeFile = pd.read_excel(f'{AutoPipe}')
+        #Selekcja kolumn
         AutoPipeFile = AutoPipeFile[['Tag No.','Combination','GlobalFX','GlobalFY','GlobalFZ']]
+        #Usuwanie pierwszego wiersza
         AutoPipeFile = AutoPipeFile.drop(0)
+        #Filtrowanie po wybranych kombinacjach obliczeniowych
         AutoPipeFile = AutoPipeFile[AutoPipeFile['Combination'].isin(Com)]
+        #Zmiana danych na liczbowe
         AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']] = AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']].astype(float)
+        #Zmiana nazw kolummn
         AutoPipeFile.rename(columns={'Tag No.':'NAME','GlobalFZ':'FZ','GlobalFX':'FX','GlobalFY':'FY'},inplace=True)
+        #Czyszczenie nazw z "\"
         AutoPipeFile['NAME'] = [clean_name(name) for name in AutoPipeFile['NAME']]
-        AutoPipeFile = AutoPipeFile[['NAME','FX','FY','FZ']].groupby('NAME').sum()
+        #Sumowanie wartości dla kombinacji obliczeniowej dla każdego zamocowania
+        AutoPipeFile = AutoPipeFile.groupby(['NAME','Combination']).sum().reset_index()
+        #Zwracanie wartości bezwzględej
+        AutoPipeFile['ABS(FX)'] = [np.absolute(x) for x in AutoPipeFile['FX']]
+        AutoPipeFile['ABS(FY)'] = [np.absolute(x) for x in AutoPipeFile['FY']]
+        AutoPipeFile['ABS(FZ)'] = [np.absolute(x) for x in AutoPipeFile['FZ']]
+        #Wybór maxymalnej wartości dla każdej osi
+        AutoPipeFileFx = AutoPipeFile[['NAME','ABS(FX)']].groupby('NAME').max().reset_index()
+        AutoPipeFileFx = pd.merge(AutoPipeFileFx,AutoPipeFile[['FX','Combination','ABS(FX)']],on='ABS(FX)',how='left').rename(columns={'Combination':'CombinationFx'})
+        AutoPipeFileFy = AutoPipeFile[['NAME','ABS(FY)']].groupby('NAME').max().reset_index()
+        AutoPipeFileFy = pd.merge(AutoPipeFileFy,AutoPipeFile[['FY','Combination','ABS(FY)']],on='ABS(FY)',how='left').rename(columns={'Combination':'CombinationFy'})
+        AutoPipeFileFz = AutoPipeFile[['NAME','ABS(FZ)']].groupby('NAME').max().reset_index()
+        AutoPipeFileFz = pd.merge(AutoPipeFileFz,AutoPipeFile[['FZ','Combination','ABS(FZ)']],on='ABS(FZ)',how='left').rename(columns={'Combination':'CombinationFz'})
+        #Łączenie wszystkich osi razem do jednego pliku
+        allDf = [AutoPipeFileFx,AutoPipeFileFy,AutoPipeFileFz]
+        MergedData = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
 
-        FinalReport = pd.merge(AutoPipeFile,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
+        #Łączenie danych z PDMS'a i AutoPipe'a
+        FinalReport = pd.merge(MergedData,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
         FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
         FinalReport['FV'] = FinalReport['FZ']
-        FinalReport = FinalReport[['NAME','Description','FX','FY','FZ','FA','FL','FV']]
+        FinalReport = FinalReport[['NAME','Description','FX','ABS(FX)','CombinationFx','FY','ABS(FY)','CombinationFy','FZ','ABS(FZ)','CombinationFz','FA','FL','FV']]
 
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
