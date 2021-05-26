@@ -46,33 +46,34 @@ def force(x):
         x['FY'] = FxSin + FyCos
         return x[['FX','FY']]
 
-#'Tag No.'  jest równie numerowi zamocowania
-PdmsFile = pd.read_csv(f'{Path}{PDMS}',sep='|',decimal='.')
-PdmsFile = PdmsFile.replace("=","'=",regex=True)
-PdmsFile = PdmsFile.replace('degree','',regex=True)
-PdmsFile['ORIANGLE'] = [clean_angles(oriangle) for oriangle in PdmsFile['ORIANGLE']]
-PdmsFile['NAME'] = [clean_name(name) for name in PdmsFile['NAME']]
-PdmsFile['SIN'] = [sin(oriangle) for oriangle in PdmsFile['ORIANGLE']]
-PdmsFile['COS'] = [cos(oriangle) for oriangle in PdmsFile['ORIANGLE']]
+if __name__ == '__main__':
+    #'Tag No.'  jest równie numerowi zamocowania
+    PdmsFile = pd.read_csv(f'{Path}{PDMS}',sep='|',decimal='.')
+    PdmsFile = PdmsFile.replace("=","'=",regex=True)
+    PdmsFile = PdmsFile.replace('degree','',regex=True)
+    PdmsFile['ORIANGLE'] = [clean_angles(oriangle) for oriangle in PdmsFile['ORIANGLE']]
+    PdmsFile['NAME'] = [clean_name(name) for name in PdmsFile['NAME']]
+    PdmsFile['SIN'] = [sin(oriangle) for oriangle in PdmsFile['ORIANGLE']]
+    PdmsFile['COS'] = [cos(oriangle) for oriangle in PdmsFile['ORIANGLE']]
 
-AutoPipeFile = pd.read_excel(f'{Path}{AutoPipe}')
-AutoPipeFile = AutoPipeFile[['Tag No.','Combination','GlobalFX','GlobalFY','GlobalFZ']]
-AutoPipeFile = AutoPipeFile.drop(0)
-AutoPipeFile = AutoPipeFile[AutoPipeFile['Combination'] == Com]
-AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']] = AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']].astype(float)
-AutoPipeFile.rename(columns={'Tag No.':'NAME','GlobalFZ':'FZ','GlobalFX':'FX','GlobalFY':'FY'},inplace=True)
-AutoPipeFile['NAME'] = [clean_name(name) for name in AutoPipeFile['NAME']]
-AutoPipeFile = AutoPipeFile[['NAME','FX','FY','FZ']].groupby('NAME').sum()
+    AutoPipeFile = pd.read_excel(f'{Path}{AutoPipe}')
+    AutoPipeFile = AutoPipeFile[['Tag No.','Combination','GlobalFX','GlobalFY','GlobalFZ']]
+    AutoPipeFile = AutoPipeFile.drop(0)
+    AutoPipeFile = AutoPipeFile[AutoPipeFile['Combination'] == Com]
+    AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']] = AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']].astype(float)
+    AutoPipeFile.rename(columns={'Tag No.':'NAME','GlobalFZ':'FZ','GlobalFX':'FX','GlobalFY':'FY'},inplace=True)
+    AutoPipeFile['NAME'] = [clean_name(name) for name in AutoPipeFile['NAME']]
+    AutoPipeFile = AutoPipeFile[['NAME','FX','FY','FZ']].groupby('NAME').sum()
 
-FinalReport = pd.merge(AutoPipeFile,PdmsFile[['NAME','ORIANGLE','SIN','COS']],on='NAME',how='left')
-FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
-FinalReport['FV'] = FinalReport['FZ']
-FinalReport = FinalReport[['NAME','FX','FY','FZ','FA','FL','FV']]
+    FinalReport = pd.merge(AutoPipeFile,PdmsFile[['NAME','ORIANGLE','SIN','COS']],on='NAME',how='left')
+    FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
+    FinalReport['FV'] = FinalReport['FZ']
+    FinalReport = FinalReport[['NAME','FX','FY','FZ','FA','FL','FV']]
 
-# Wygenerowanie raportu końcowego
-print(f'Wszystko poszło "ok" plik zostanie zapisany pod scieżką: {Path}')
-FinalReport.to_excel(f'{Path}{Out}')
-print('Plik zapisany')
-print('Wciśnij enter aby zakończyć')
-koniec = input()
+    # Wygenerowanie raportu końcowego
+    print(f'Wszystko poszło "ok" plik zostanie zapisany pod scieżką: {Path}')
+    FinalReport.to_excel(f'{Path}{Out}')
+    print('Plik zapisany')
+    print('Wciśnij enter aby zakończyć')
+    koniec = input()
 
