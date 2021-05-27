@@ -7,7 +7,7 @@ def CombinationsList(path):
     #Wczytanie pliku autopipe
     AutoPipeFile = pd.read_excel(f'{path}')
     #Selekcja kolumn
-    AutoPipeFile = AutoPipeFile[['Combination']].drop_duplicates()
-    list = AutoPipeFile[['Combination']].to_numpy()
-    return list
+    AutoPipeFile = AutoPipeFile['Combination'].drop_duplicates()
+    comList = list(AutoPipeFile)
+    return comList
 
