@@ -8,6 +8,6 @@ def CombinationsList(path):
     AutoPipeFile = pd.read_excel(f'{path}')
     #Selekcja kolumn
     AutoPipeFile = AutoPipeFile['Combination'].drop_duplicates()
+    AutoPipeFile = AutoPipeFile.dropna()
     comList = list(AutoPipeFile)
     return comList
-
