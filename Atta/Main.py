@@ -112,8 +112,8 @@ if __name__ == '__main__':
     #Tkinter start
     root = Tk()
     root.title('Report Creator')
-    ImgPath = pathlib.Path(__file__).parent.absolute()
-    root.iconbitmap(f'{ImgPath}\\img\\logo.ico') 
+    # ImgPath = pathlib.Path(__file__).parent.absolute()
+    # root.iconbitmap(f'{ImgPath}\\logo.ico') 
     root.geometry('550x300')
    
 
