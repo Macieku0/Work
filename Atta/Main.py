@@ -9,16 +9,21 @@ from PIL import ImageTk, Image
 from timeit import default_timer
 import pathlib
 from functools import reduce
+from Combinations import CombinationsList
 
+#Obliczanie cosinusa z podanego kąta
 def cos(x):
     return math.cos(math.radians(float(x))) 
+#Obliczanie sinusa z podanego kąta
 def sin(x):
     return math.sin(math.radians(float(x)))
+#Czyszczenie katów z dopiska degree
 def clean_angles(x):
     return x[x.rfind(' ')+1:len(x)]
+#Czyszczenie nazw zamocowań z '/'
 def clean_name(x):
     return x[1:len(x)]
-
+#Obliczanie sił lokalnych na podstawie wartości globalnych i ułożenia w płaszczyźnie
 def force(x):
     if ((float(x[2]) + 360)%360) >= 180:
         FxCos = (float(x[0]) * float(x[3]))
@@ -36,21 +41,85 @@ def force(x):
         x['FX'] = FxCos + FySin
         x['FY'] = FxSin + FyCos
         return x[['FX','FY']]
+#Wstępna lokalizacja do wyboru folderów / plików
+global InitialDir  
+InitialDir = 'C:/'
+# Wybieranie ścieżki dla raportu PDMS
 def GetPDMS():
-    root.filename = filedialog.askopenfilename(initialdir='C:/',title='Choose your PDMS report file', filetypes=[('CSV','*.csv')])
-    PDMSEntry.insert(0,root.filename)
+    global InitialDir  
+    root.filename = filedialog.askopenfilename(initialdir=InitialDir,title='Choose your PDMS report file', filetypes=[('CSV','*.csv')])
+    if root.filename != '':
+        PDMSEntry.delete(0,END)
+        PDMSEntry.insert(0,root.filename)
+    #global InitialDir
+    InitialDir = root.filename
+#Wybieranie ścieżki dla raportu AutoPipe
 def GetAutoPipe():
-    root.filename = filedialog.askopenfilename(initialdir='C:/',title='Choose your AutoPipe report file', filetypes=[('XLS','*.xlsx')])
-    AutoPipeEntry.insert(0,root.filename)
+    global InitialDir  
+    root.filename = filedialog.askopenfilename(initialdir=InitialDir,title='Choose your AutoPipe report file', filetypes=[('XLS','*.xlsx')])
+    if root.filename != '':
+        AutoPipeEntry.delete(0,END)
+        AutoPipeEntry.insert(0,root.filename)
+    #global InitialDir 
+    InitialDir = root.filename
+#Wybieranie ścieżki dla folderu
 def GetFolderDir():
-    root.filename = filedialog.askdirectory(initialdir='C:/',title='Choose folder Directory',)
-    PathEntry.insert(0,root.filename + '/')
+    global InitialDir  
+    root.filename = filedialog.askdirectory(initialdir=InitialDir,title='Choose folder Directory',)
+    if root.filename != '':
+        PathEntry.delete(0,END)
+        PathEntry.insert(0,root.filename + '/')
+    #global InitialDir 
+    InitialDir = root.filename
+
+def ChooseCom():
+    global ChoosedCom
+    ChoosedCom = []
+    for com in AllCom:
+        nameOfCom = com.get()
+        if nameOfCom != '':
+            ChoosedCom.append(nameOfCom)
+    ChoosedComWindow = Toplevel(root)
+    ChoosedComWindow.title('Wybrane kombinacje')
+    ChoosedComWindow.geometry('200x400')
+    for x in ChoosedCom:
+        x = Label(ChoosedComWindow,text=x).pack()
+
+def OpenComWindow():
+    global AllCom
+    AutoPipe = AutoPipeEntry.get()
+    if AutoPipe == '':
+        messagebox.showerror('Brak danych!','Podaj ścieżkę do raportu z AutoPipe')
+        return
+    list = CombinationsList(AutoPipe)
+    ComWindow = Toplevel(root)
+    ComWindow.title('Choose Combinations')
+    ComWindow.geometry('400x250')
+    i = 0
+    AllCom =[]
+    for x in list:
+        strVar = StringVar()
+        if i <=6:
+            Checkbutton(ComWindow,text=x,variable=strVar, onvalue=x,offvalue='').grid(column=0,row=i)
+        elif i <=12:
+            Checkbutton(ComWindow,text=x,variable=strVar, onvalue=x,offvalue='').grid(column=1,row=i-7)
+        else:
+            Checkbutton(ComWindow,text=x,variable=strVar, onvalue=x,offvalue='').grid(column=2,row=i-13)
+        i += 1
+        AllCom.append(strVar)   
+    #Przycisk potwierdzający wybór zaznaczonych kombinacji
+    ConfirmCom = Button(ComWindow,text='Confirm choice',command=ChooseCom).grid(column=0,columnspan=3)
+
 if __name__ == '__main__':
     def startProgram():
+        if ChoosedCom == None:
+            messagebox.showerror('Brak danych!','Kombinacje nie zostały wybrane')
+            return
         Path = PathEntry.get()
         PDMS = PDMSEntry.get()
         AutoPipe = AutoPipeEntry.get()
-        Com = [Com1.get(),Com2.get(),Com3.get(),Com4.get(),Com5.get(),Com6.get(),Com7.get(),Com8.get(),Com9.get(),Com10.get(),Com11.get(),Com12.get(),Com13.get(),Com14.get()]
+        #Załadowanie kombinacji z drugiego okna
+        Com = ChoosedCom
         #Nazwa raportu wyjściowego
         Out = 'Raport_policzony.xlsx'
 
@@ -87,7 +156,8 @@ if __name__ == '__main__':
         AutoPipeFile['ABS(FX)'] = [np.absolute(x) for x in AutoPipeFile['FX']]
         AutoPipeFile['ABS(FY)'] = [np.absolute(x) for x in AutoPipeFile['FY']]
         AutoPipeFile['ABS(FZ)'] = [np.absolute(x) for x in AutoPipeFile['FZ']]
-        #Wybór maxymalnej wartości dla każdej osi
+        #TODO ROZPISAĆ W POSTACI FUNKCJI NA MIN,MAX,EXTREMUM
+        #Wybór ekstremalnej wartości dla każdej osi
         AutoPipeFileFx = AutoPipeFile[['NAME','ABS(FX)']].groupby('NAME').max().reset_index()
         AutoPipeFileFx = pd.merge(AutoPipeFileFx,AutoPipeFile[['FX','Combination','ABS(FX)']],on='ABS(FX)',how='left').rename(columns={'Combination':'CombinationFx'})
         AutoPipeFileFy = AutoPipeFile[['NAME','ABS(FY)']].groupby('NAME').max().reset_index()
@@ -97,9 +167,13 @@ if __name__ == '__main__':
         #Łączenie wszystkich osi razem do jednego pliku
         allDf = [AutoPipeFileFx,AutoPipeFileFy,AutoPipeFileFz]
         MergedData = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
+        #Usuwanie duplikatów
+        MergedData.drop_duplicates('NAME')
 
         #Łączenie danych z PDMS'a i AutoPipe'a
         FinalReport = pd.merge(MergedData,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
+        #TODO ZMIENIĆ NA PRZELICZANIE DLA MIN,MAX,EXTREMUM
+        #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X Y
         FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
         FinalReport['FV'] = FinalReport['FZ']
         FinalReport = FinalReport[['NAME','Description','FX','CombinationFx','FY','CombinationFy','FZ','CombinationFz','FA','FL','FV']]
@@ -112,63 +186,37 @@ if __name__ == '__main__':
     #Tkinter start
     root = Tk()
     root.title('Report Creator')
-    # ImgPath = pathlib.Path(__file__).parent.absolute()
-    # root.iconbitmap(f'{ImgPath}\\logo.ico') 
-    root.geometry('550x300')
+    root.geometry('550x175')
    
 
     #Nazwa raportu PDMS
     PDMSEntry = Entry(root, width=55,borderwidth=2)
-    PDMSEntry.grid(column=1,row=1)
+    PDMSEntry.grid(column=1,columnspan=2,row=1)
     PdmsButton = Button(root, text='Get PDMS report directory',command=GetPDMS,width=25).grid(column=0,row=1)
     #Nazwa raportu Autopipe
     AutoPipeEntry = Entry(root, width=55,borderwidth=2)
-    AutoPipeEntry.grid(column=1,row=2)
+    AutoPipeEntry.grid(column=1,columnspan=2,row=2)
     AutoPipeButton = Button(root, text='Get AutoPipe report directory',command=GetAutoPipe,width=25).grid(column=0,row=2)
     #Scieżka do plików
     PathEntry = Entry(root, width=55,borderwidth=2)
-    PathEntry.grid(column=1,row=0)
+    PathEntry.grid(column=1,columnspan=2,row=0)
     PathButton = Button(root, text='Get folder directory',command=GetFolderDir,width=25).grid(column=0,row=0)
 
+    #TODO DODAĆ CHECK BOXY DLA MIN MAX I EXTREMUM 
+
+    #Dla wybranej opcji program przelicza Fx Fy Fz tak jak teraz tylko dodaje kolumny dodatkowo dla max i min - 3 odzielne ścieżki
+    Minimum = StringVar()
+    Maximum = StringVar()
+    Extreme = StringVar()
+    Checkbutton(root,text='MIN',variable=Minimum, onvalue='MIN',offvalue='').grid(column=0,row=3)
+    Checkbutton(root,text='MAX',variable=Maximum, onvalue='MAX',offvalue='').grid(column=1,row=3)
+    Checkbutton(root,text='EXTREME',variable=Extreme, onvalue='EXTREME',offvalue='').grid(column=2,row=3)
 
     #Kombinacja do wybrania
-    Com1 = StringVar()
-    Com2 = StringVar()
-    Com3 = StringVar()
-    Com4 = StringVar()
-    Com5 = StringVar()
-    Com6 = StringVar()
-    Com7 = StringVar()
-    Com8 = StringVar()
-    Com9 = StringVar()
-    Com10 = StringVar()
-    Com11 = StringVar()
-    Com12 = StringVar()
-    Com13 = StringVar()
-    Com14 = StringVar()
-    Combinations = [('Gravity{1}',Com1),
-                    ('GT1P1{2}',Com2),
-                    ('GT1P1W1{2}',Com3),
-                    ('GT1P1W2{2}',Com4),
-                    ('GT1P1W3{2}',Com5),
-                    ('GT1P1W4{2}',Com6),
-                    ('GT1P1U1{4}',Com7),
-                    ('User 3{5}',Com8),
-                    ('GT1P1U3{5}',Com9),
-                    ('GT2P2{6}',Com10),
-                    ('Hydrotest-NL{7}',Com11),
-                    ('MAX1',Com12),
-                    ('MIN1',Com13),
-                    ('EXTREME-OCCASIONAL',Com14)
-                    ]
-    i= 0
-    for text,com in Combinations:
-        if i <=6:
-            Checkbutton(root,text=text,variable=com, onvalue=text,offvalue='').grid(column=0,row=i+3)
-        else:
-            Checkbutton(root,text=text,variable=com, onvalue=text,offvalue='').grid(column=1,row=(i-6)+2)
-        i += 1
-    StartButton = Button(root,text='Start',command=startProgram,height=1,width=10).grid(column=0,columnspan=2)
+    ComWindowButton = Button(root,text='Choose combinations',command=OpenComWindow).grid(column=0,columnspan=3,row=4)
+
+
+    StartButton = Button(root,text='Start',command=startProgram,height=1,width=10).grid(column=0,columnspan=3)
     root.mainloop()
 
 
