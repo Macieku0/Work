@@ -102,7 +102,7 @@ if __name__ == '__main__':
         FinalReport = pd.merge(MergedData,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
         FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
         FinalReport['FV'] = FinalReport['FZ']
-        FinalReport = FinalReport[['NAME','Description','FX','ABS(FX)','CombinationFx','FY','ABS(FY)','CombinationFy','FZ','ABS(FZ)','CombinationFz','FA','FL','FV']]
+        FinalReport = FinalReport[['NAME','Description','FX','CombinationFx','FY','CombinationFy','FZ','CombinationFz','FA','FL','FV']]
 
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
