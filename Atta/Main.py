@@ -207,22 +207,19 @@ if __name__ == '__main__':
             FinalReportEXT = FinalReport
             FinalReportEXT[['Extremum - FA','Extremum - FL']] = FinalReport[['Extremum - FX','Extremum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportEXT['Extremum - FV'] = FinalReport['Extremum - FZ']
-            # allDf.append(FinalReportEXT)
         if Minimum.get() != '':
             FinalReportMIN = FinalReport
             FinalReportMIN[['Minimum - FA','Minimum - FL']] = FinalReport[['Minimum - FX','Minimum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMIN['Minimum - FV'] = FinalReport['Minimum - FZ']
-            # allDf.append(FinalReportMIN)
         if Maximum.get() != '':
             FinalReportMAX = FinalReport
             FinalReportMAX[['Maximum - FA','Maximum - FL']] = FinalReport[['Maximum - FX','Maximum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMAX['Maximum - FV'] = FinalReport['Maximum - FZ']
-            # allDf.append(FinalReportMAX)
+        
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
 
-        # FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
         FinalReport = FinalReport[FinalList]
 
         # Wygenerowanie raportu końcowego
