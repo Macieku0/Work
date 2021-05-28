@@ -24,23 +24,20 @@ def clean_angles(x):
 def clean_name(x):
     return x[1:len(x)]
 #Obliczanie sił lokalnych na podstawie wartości globalnych i ułożenia w płaszczyźnie
-def force(x):
+def force(x): #'FX' - 0,'FY' - 1,'ORIANGLE' - 2,'COS' - 3,'SIN' - 4
     if ((float(x[2]) + 360)%360) >= 180:
         FxCos = (float(x[0]) * float(x[3]))
         FxSin = (float(x[0]) * float(x[4]))
         FyCos = (float(x[1]) * float(-x[3]))
         FySin = (float(x[1]) * float(x[4]))
-        x['FX'] = FxCos + FySin
-        x['FY'] = FxSin + FyCos
-        return x[['FX','FY']]
     else:
         FxCos = (float(x[0]) * float(x[3]))
         FxSin = (float(x[0]) * float(-x[4]))
         FyCos = (float(x[1]) * float(x[3]))
         FySin = (float(x[1]) * float(x[4]))
-        x['FX'] = FxCos + FySin
-        x['FY'] = FxSin + FyCos
-        return x[['FX','FY']]
+    x['FA'] = float('{:.2f}'.format(FxCos + FySin))
+    x['FL'] = float('{:.2f}'.format(FxSin + FyCos))
+    return x[['FA','FL']]
 #Wstępna lokalizacja do wyboru folderów / plików
 global InitialDir  
 InitialDir = 'C:/'
@@ -152,36 +149,88 @@ if __name__ == '__main__':
         AutoPipeFile['NAME'] = [clean_name(name) for name in AutoPipeFile['NAME']]
         #Sumowanie wartości dla kombinacji obliczeniowej dla każdego zamocowania
         AutoPipeFile = AutoPipeFile.groupby(['NAME','Combination']).sum().reset_index()
-        #Zwracanie wartości bezwzględej
-        AutoPipeFile['ABS(FX)'] = [np.absolute(x) for x in AutoPipeFile['FX']]
-        AutoPipeFile['ABS(FY)'] = [np.absolute(x) for x in AutoPipeFile['FY']]
-        AutoPipeFile['ABS(FZ)'] = [np.absolute(x) for x in AutoPipeFile['FZ']]
-        #TODO ROZPISAĆ W POSTACI FUNKCJI NA MIN,MAX,EXTREMUM
-        #Wybór ekstremalnej wartości dla każdej osi
-        AutoPipeFileFx = AutoPipeFile[['NAME','ABS(FX)']].groupby('NAME').max().reset_index()
-        AutoPipeFileFx = pd.merge(AutoPipeFileFx,AutoPipeFile[['FX','Combination','ABS(FX)']],on='ABS(FX)',how='left').rename(columns={'Combination':'CombinationFx'})
-        AutoPipeFileFy = AutoPipeFile[['NAME','ABS(FY)']].groupby('NAME').max().reset_index()
-        AutoPipeFileFy = pd.merge(AutoPipeFileFy,AutoPipeFile[['FY','Combination','ABS(FY)']],on='ABS(FY)',how='left').rename(columns={'Combination':'CombinationFy'})
-        AutoPipeFileFz = AutoPipeFile[['NAME','ABS(FZ)']].groupby('NAME').max().reset_index()
-        AutoPipeFileFz = pd.merge(AutoPipeFileFz,AutoPipeFile[['FZ','Combination','ABS(FZ)']],on='ABS(FZ)',how='left').rename(columns={'Combination':'CombinationFz'})
+
+
+        
+        #MAX,MIN,EXTREMUM Colums
+        Conditions = [Extremum.get(),Maximum.get(),Minimum.get()]
+        allDf = []
+        if Extremum.get() != '':
+            #Wybór ekstremalnej wartości dla każdej osi
+            #Zwracanie wartości bezwzględej
+            AutoPipeFileEXT = AutoPipeFile
+            AutoPipeFileEXT['ABS(FX)'] = [np.absolute(x) for x in AutoPipeFile['FX']]
+            AutoPipeFileEXT['ABS(FY)'] = [np.absolute(x) for x in AutoPipeFile['FY']]
+            AutoPipeFileEXT['ABS(FZ)'] = [np.absolute(x) for x in AutoPipeFile['FZ']]
+            AutoPipeFileFxEXT = AutoPipeFileEXT[['NAME','ABS(FX)']].groupby('NAME').max().reset_index()
+            AutoPipeFileFxEXT = pd.merge(AutoPipeFileFxEXT,AutoPipeFileEXT[['FX','Combination','ABS(FX)']],on='ABS(FX)',how='left').rename(columns={'Combination':'Extremum - CombinationFx','FX':'Extremum - FX'}).drop_duplicates('NAME')
+            AutoPipeFileFyEXT = AutoPipeFileEXT[['NAME','ABS(FY)']].groupby('NAME').max().reset_index()
+            AutoPipeFileFyEXT = pd.merge(AutoPipeFileFyEXT,AutoPipeFileEXT[['FY','Combination','ABS(FY)']],on='ABS(FY)',how='left').rename(columns={'Combination':'Extremum - CombinationFy','FY':'Extremum - FY'}).drop_duplicates('NAME')
+            AutoPipeFileFzEXT = AutoPipeFileEXT[['NAME','ABS(FZ)']].groupby('NAME').max().reset_index()
+            AutoPipeFileFzEXT = pd.merge(AutoPipeFileFzEXT,AutoPipeFileEXT[['FZ','Combination','ABS(FZ)']],on='ABS(FZ)',how='left').rename(columns={'Combination':'Extremum - CombinationFz','FZ':'Extremum - FZ'}).drop_duplicates('NAME')
+            allDf.extend([AutoPipeFileFxEXT,AutoPipeFileFyEXT,AutoPipeFileFzEXT])
+        if Minimum.get() != '':
+            AutoPipeFileFxMIN = AutoPipeFile[['NAME','FX']].groupby('NAME').min().reset_index()
+            AutoPipeFileFxMIN = pd.merge(AutoPipeFileFxMIN,AutoPipeFile[['FX','Combination']],on='FX',how='left').rename(columns={'Combination':'Minimum - CombinationFx','FX':'Minimum - FX'}).drop_duplicates('NAME')
+            AutoPipeFileFyMIN = AutoPipeFile[['NAME','FY']].groupby('NAME').min().reset_index()
+            AutoPipeFileFyMIN = pd.merge(AutoPipeFileFyMIN,AutoPipeFile[['FY','Combination']],on='FY',how='left').rename(columns={'Combination':'Minimum - CombinationFy','FY':'Minimum - FY'}).drop_duplicates('NAME')
+            AutoPipeFileFzMIN = AutoPipeFile[['NAME','FZ']].groupby('NAME').min().reset_index()
+            AutoPipeFileFzMIN = pd.merge(AutoPipeFileFzMIN,AutoPipeFile[['FZ','Combination']],on='FZ',how='left').rename(columns={'Combination':'Minimum - CombinationFz','FZ':'Minimum - FZ'}).drop_duplicates('NAME')
+            allDf.extend([AutoPipeFileFxMIN,AutoPipeFileFyMIN,AutoPipeFileFzMIN])
+        if Maximum.get() != '':
+            AutoPipeFileFxMAX = AutoPipeFile[['NAME','FX']].groupby('NAME').min().reset_index()
+            AutoPipeFileFxMAX = pd.merge(AutoPipeFileFxMAX,AutoPipeFile[['FX','Combination']],on='FX',how='left').rename(columns={'Combination':'Maximum - CombinationFx','FX':'Maximum - FX'}).drop_duplicates('NAME')
+            AutoPipeFileFyMAX = AutoPipeFile[['NAME','FY']].groupby('NAME').min().reset_index()
+            AutoPipeFileFyMAX = pd.merge(AutoPipeFileFyMAX,AutoPipeFile[['FY','Combination']],on='FY',how='left').rename(columns={'Combination':'Maximum - CombinationFy','FY':'Maximum - FY'}).drop_duplicates('NAME')
+            AutoPipeFileFzMAX = AutoPipeFile[['NAME','FZ']].groupby('NAME').min().reset_index()
+            AutoPipeFileFzMAX = pd.merge(AutoPipeFileFzMAX,AutoPipeFile[['FZ','Combination']],on='FZ',how='left').rename(columns={'Combination':'Maximum - CombinationFz','FZ':'Maximum - FZ'}).drop_duplicates('NAME')
+            allDf.extend([AutoPipeFileFxMAX,AutoPipeFileFyMAX,AutoPipeFileFzMAX])
+
         #Łączenie wszystkich osi razem do jednego pliku
-        allDf = [AutoPipeFileFx,AutoPipeFileFy,AutoPipeFileFz]
         MergedData = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
         #Usuwanie duplikatów
         MergedData.drop_duplicates('NAME')
-
+        MergedData.to_excel(f'{Path}{Out}') 
+ 
         #Łączenie danych z PDMS'a i AutoPipe'a
+        FinalList = ['NAME','Description']
+        for x in Conditions:
+            if x != '':
+                FinalList.extend([f'{x} - CombinationFx',f'{x} - FX',f'{x} - CombinationFy',f'{x} - FY',f'{x} - CombinationFz',f'{x} - FZ'])
+
         FinalReport = pd.merge(MergedData,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
         #TODO ZMIENIĆ NA PRZELICZANIE DLA MIN,MAX,EXTREMUM
         #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X Y
-        FinalReport[['FA','FL']] = FinalReport[['FX','FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
-        FinalReport['FV'] = FinalReport['FZ']
-        FinalReport = FinalReport[['NAME','Description','FX','CombinationFx','FY','CombinationFy','FZ','CombinationFz','FA','FL','FV']]
+        #MAX,MIN,EXTREMUM Colums
+        # allDf = []
+        if Extremum.get() != '':
+            FinalReportEXT = FinalReport
+            FinalReportEXT[['Extremum - FA','Extremum - FL']] = FinalReport[['Extremum - FX','Extremum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
+            FinalReportEXT['Extremum - FV'] = FinalReport['Extremum - FZ']
+            # allDf.append(FinalReportEXT)
+        if Minimum.get() != '':
+            FinalReportMIN = FinalReport
+            FinalReportMIN[['Minimum - FA','Minimum - FL']] = FinalReport[['Minimum - FX','Minimum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
+            FinalReportMIN['Minimum - FV'] = FinalReport['Minimum - FZ']
+            # allDf.append(FinalReportMIN)
+        if Maximum.get() != '':
+            FinalReportMAX = FinalReport
+            FinalReportMAX[['Maximum - FA','Maximum - FL']] = FinalReport[['Maximum - FX','Maximum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
+            FinalReportMAX['Maximum - FV'] = FinalReport['Maximum - FZ']
+            # allDf.append(FinalReportMAX)
+        for x in Conditions:
+            if x != '':
+                FinalList.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
+
+        # FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
+        FinalReport = FinalReport[FinalList]
 
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
         #Wiadomość na koniec generowania raportu
         messagebox.showinfo('Raport Gotowy!',f'Plik został zapisany pod scieżką: {Path}{Out}')
+
+
 
     #Tkinter start
     root = Tk()
@@ -201,16 +250,16 @@ if __name__ == '__main__':
     PathEntry = Entry(root, width=55,borderwidth=2)
     PathEntry.grid(column=1,columnspan=2,row=0)
     PathButton = Button(root, text='Get folder directory',command=GetFolderDir,width=25).grid(column=0,row=0)
-
-    #TODO DODAĆ CHECK BOXY DLA MIN MAX I EXTREMUM 
-
     #Dla wybranej opcji program przelicza Fx Fy Fz tak jak teraz tylko dodaje kolumny dodatkowo dla max i min - 3 odzielne ścieżki
+    global Maximum
+    global Minimum
+    global Extremum
     Minimum = StringVar()
     Maximum = StringVar()
-    Extreme = StringVar()
-    Checkbutton(root,text='MIN',variable=Minimum, onvalue='MIN',offvalue='').grid(column=0,row=3)
-    Checkbutton(root,text='MAX',variable=Maximum, onvalue='MAX',offvalue='').grid(column=1,row=3)
-    Checkbutton(root,text='EXTREME',variable=Extreme, onvalue='EXTREME',offvalue='').grid(column=2,row=3)
+    Extremum = StringVar()
+    Checkbutton(root,text='MIN',variable=Minimum, onvalue='Minimum',offvalue='').grid(column=0,row=3)
+    Checkbutton(root,text='MAX',variable=Maximum, onvalue='Maximum',offvalue='').grid(column=1,row=3)
+    Checkbutton(root,text='EXTREME',variable=Extremum, onvalue='Extremum',offvalue='').grid(column=2,row=3)
 
     #Kombinacja do wybrania
     ComWindowButton = Button(root,text='Choose combinations',command=OpenComWindow).grid(column=0,columnspan=3,row=4)
