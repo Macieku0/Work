@@ -158,7 +158,7 @@ if __name__ == '__main__':
         if Extremum.get() != '':
             #Wybór ekstremalnej wartości dla każdej osi
             #Zwracanie wartości bezwzględej
-            AutoPipeFileEXT = AutoPipeFile
+            AutoPipeFileEXT = AutoPipeFile.copy()
             AutoPipeFileEXT['ABS(FX)'] = [np.absolute(x) for x in AutoPipeFile['FX']]
             AutoPipeFileEXT['ABS(FY)'] = [np.absolute(x) for x in AutoPipeFile['FY']]
             AutoPipeFileEXT['ABS(FZ)'] = [np.absolute(x) for x in AutoPipeFile['FZ']]
@@ -178,11 +178,11 @@ if __name__ == '__main__':
             AutoPipeFileFzMIN = pd.merge(AutoPipeFileFzMIN,AutoPipeFile[['FZ','Combination']],on='FZ',how='left').rename(columns={'Combination':'Minimum - CombinationFz','FZ':'Minimum - FZ'}).drop_duplicates('NAME')
             allDf.extend([AutoPipeFileFxMIN,AutoPipeFileFyMIN,AutoPipeFileFzMIN])
         if Maximum.get() != '':
-            AutoPipeFileFxMAX = AutoPipeFile[['NAME','FX']].groupby('NAME').min().reset_index()
+            AutoPipeFileFxMAX = AutoPipeFile[['NAME','FX']].groupby('NAME').max().reset_index()
             AutoPipeFileFxMAX = pd.merge(AutoPipeFileFxMAX,AutoPipeFile[['FX','Combination']],on='FX',how='left').rename(columns={'Combination':'Maximum - CombinationFx','FX':'Maximum - FX'}).drop_duplicates('NAME')
-            AutoPipeFileFyMAX = AutoPipeFile[['NAME','FY']].groupby('NAME').min().reset_index()
+            AutoPipeFileFyMAX = AutoPipeFile[['NAME','FY']].groupby('NAME').max().reset_index()
             AutoPipeFileFyMAX = pd.merge(AutoPipeFileFyMAX,AutoPipeFile[['FY','Combination']],on='FY',how='left').rename(columns={'Combination':'Maximum - CombinationFy','FY':'Maximum - FY'}).drop_duplicates('NAME')
-            AutoPipeFileFzMAX = AutoPipeFile[['NAME','FZ']].groupby('NAME').min().reset_index()
+            AutoPipeFileFzMAX = AutoPipeFile[['NAME','FZ']].groupby('NAME').max().reset_index()
             AutoPipeFileFzMAX = pd.merge(AutoPipeFileFzMAX,AutoPipeFile[['FZ','Combination']],on='FZ',how='left').rename(columns={'Combination':'Maximum - CombinationFz','FZ':'Maximum - FZ'}).drop_duplicates('NAME')
             allDf.extend([AutoPipeFileFxMAX,AutoPipeFileFyMAX,AutoPipeFileFzMAX])
 
@@ -199,29 +199,31 @@ if __name__ == '__main__':
                 FinalList.extend([f'{x} - CombinationFx',f'{x} - FX',f'{x} - CombinationFy',f'{x} - FY',f'{x} - CombinationFz',f'{x} - FZ'])
 
         FinalReport = pd.merge(MergedData,PdmsFile[['NAME','ORIANGLE','SIN','COS','Description']],on='NAME',how='left')
-        #TODO ZMIENIĆ NA PRZELICZANIE DLA MIN,MAX,EXTREMUM
         #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X Y
         #MAX,MIN,EXTREMUM Colums
-        # allDf = []
+        allDf = []
         if Extremum.get() != '':
-            FinalReportEXT = FinalReport
+            FinalReportEXT = FinalReport.copy()
             FinalReportEXT[['Extremum - FA','Extremum - FL']] = FinalReport[['Extremum - FX','Extremum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportEXT['Extremum - FV'] = FinalReport['Extremum - FZ']
+            allDf.append(FinalReportEXT)
         if Minimum.get() != '':
-            FinalReportMIN = FinalReport
+            FinalReportMIN = FinalReport.copy()
             FinalReportMIN[['Minimum - FA','Minimum - FL']] = FinalReport[['Minimum - FX','Minimum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMIN['Minimum - FV'] = FinalReport['Minimum - FZ']
+            allDf.append(FinalReportMIN)
         if Maximum.get() != '':
-            FinalReportMAX = FinalReport
+            FinalReportMAX = FinalReport.copy()
             FinalReportMAX[['Maximum - FA','Maximum - FL']] = FinalReport[['Maximum - FX','Maximum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMAX['Maximum - FV'] = FinalReport['Maximum - FZ']
-        
+            allDf.append(FinalReportMAX)
+        FinalReportEXT.to_excel('C:\\Dev\\work\\Work_python\\Atta\\test.xlsx')
+        FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['NAME'],how='outer'),allDf)
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
 
         FinalReport = FinalReport[FinalList]
-
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
         #Wiadomość na koniec generowania raportu
@@ -230,6 +232,7 @@ if __name__ == '__main__':
 
 
     #Tkinter start
+
     root = Tk()
     root.title('Report Creator')
     root.geometry('550x175')
