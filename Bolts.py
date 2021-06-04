@@ -43,13 +43,11 @@ src[['SECTION','PN']] = ['ŚRUBY, NAKRĘTKI','-']
 src['DN1'] = [x[:3] for x in src['ITEM-CODE']]
 src['QUANTITY'] = [int(x) for x in src['QUANTITY']]
 
-poRurach = src[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY']].copy()
-# poRurach['QUANTITY'] = [int(x) for x in poRurach['QUANTITY']]
-poRurach = poRurach[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY']].groupby(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).sum().reset_index()
+poRurach = src.copy()
+poRurach = poRurach[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY','MATERIAL']].groupby(['PIPLINE NAME','ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
 
 
 zbiorowe = src.copy()
-# zbiorowe['QUANTITY'] = [int(x) for x in zbiorowe['QUANTITY']]
 zbiorowe = zbiorowe[['DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL']].groupby(['ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
 
 
@@ -60,8 +58,8 @@ poRurach = pd.merge(poRurach,src[['ITEM-CODE','SECTION','PN','DN1']],on=['ITEM-C
 writer = pd.ExcelWriter(pathTo)
 
 #Save to xlsx file
-poRurach.to_excel(writer, sheet_name='Po rurociągach')
-zbiorowe.to_excel(writer, sheet_name='Zbiorowe')
+poRurach[['SECTION','PIPLINE NAME','ITEM-CODE','PN','DN1','DESCRIPTION','MATERIAL','QUANTITY']].to_excel(writer, sheet_name='Po rurociągach')
+zbiorowe[['SECTION','ITEM-CODE','PN','DN1','DESCRIPTION','MATERIAL','QUANTITY']].to_excel(writer, sheet_name='Zbiorowe')
 
 #Write xlsx file
 writer.save()
