@@ -1,20 +1,14 @@
-
 import pandas as pd
 import re
 
-path = "C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.TXT"
+pathFrom = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.TXT'
+pathTo = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.xlsx'
 
-# src = src[['PIPELINE-REFERENCE','ITEM-CODE','QNTY','DESCRIPTION']].rename(columns={'QNTY':'QUANTITY','PIPELINE-REFERENCE':'PIPELINE NAME'})
-# src[['SECTION','PN']] = ['ŚRUBY, NAKRĘTKI','-']
-# src['DN1'] = [x[:3] for x in src['ITEM-CODE']]
-# src['PN'] = '-'
-# src
-# print(src)
-with open(path, "r") as file:
+with open(pathFrom, 'r') as file:
     lines = file.readlines()
-    lista = []
-    global newList
-    newList = ['','','','','']
+    finalList = []
+    global indexList
+    indexList = ['','','','','']
     i = 0
     for line in lines:
         if not line.isspace():
@@ -25,43 +19,49 @@ with open(path, "r") as file:
                 quantity = re.sub('\n','',a[108:111])
             if (len(a) <= 50 and len(a) >= 10):
                 if a[1:9] == 'PIPELINE':
-                    newList = ['','','','','']
+                    indexList = ['','','','','']
                     pipeline = re.sub('\n','',a[14:len(a)])
-                    newList[0] = pipeline
+                    indexList[0] = pipeline
                 elif a[5:7] == a.split()[0][0:2]:
                     secondDesc = re.sub('\n','',a[5:len(a)])
                     description = description + ', ' + secondDesc
-                    newList[1] = description
-                    newList[2]= itemCode
-                    newList[3] = quantity
-                    newList[4] =  secondDesc
-                    przepis = newList.copy()
+                    indexList[1] = description
+                    indexList[2] = itemCode
+                    indexList[3] = quantity
+                    indexList[4] = secondDesc
                     i += 1
-                    lista.append(przepis)
+                    finalList.append(indexList.copy())
             if (len(a) <= 10 and len(a) >= 0):
                 material = re.sub('\n','',a[5:len(a)])
-                newList[1] = description + ', ' + material
-                newList[4] = material
-                del lista[i-1]
-                przepis = newList.copy()
-                lista.append(przepis)
-        # if i == 5:
-        #     break
+                indexList[1] = description + ', ' + material
+                indexList[4] = material
+                del finalList[i-1]
+                finalList.append(indexList.copy())
 
-src = pd.DataFrame(lista,columns=['PIPLINE NAME','DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL'])
+src = pd.DataFrame(finalList,columns=['PIPLINE NAME','DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL'])
 src[['SECTION','PN']] = ['ŚRUBY, NAKRĘTKI','-']
 src['DN1'] = [x[:3] for x in src['ITEM-CODE']]
+src['QUANTITY'] = [int(x) for x in src['QUANTITY']]
+
+poRurach = src[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY']].copy()
+# poRurach['QUANTITY'] = [int(x) for x in poRurach['QUANTITY']]
+poRurach = poRurach[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY']].groupby(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).sum().reset_index()
 
 
-poRurach = src[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','MATERIAL']].copy()
-print(poRurach)
-poRurach['QUANTITY'] = [int(x) for x in poRurach['QUANTITY']]
-poRurach = poRurach.groupby([['PIPLINE NAME','ITEM-CODE','DESCRIPTION','MATERIAL']]).sum().reset_index()
 zbiorowe = src.copy()
-zbiorowe['QUANTITY'] = [int(x) for x in zbiorowe['QUANTITY']]
-zbiorowe = zbiorowe[['DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL']].groupby([['ITEM-CODE','DESCRIPTION','MATERIAL']]).sum().reset_index()
-writer = pd.ExcelWriter("C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.xlsx")
+# zbiorowe['QUANTITY'] = [int(x) for x in zbiorowe['QUANTITY']]
+zbiorowe = zbiorowe[['DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL']].groupby(['ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
+
+
+zbiorowe = pd.merge(zbiorowe,src[['ITEM-CODE','SECTION','PN','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['ITEM-CODE','DESCRIPTION']).reset_index()
+poRurach = pd.merge(poRurach,src[['ITEM-CODE','SECTION','PN','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).reset_index()
+
+#Creating xlsx file
+writer = pd.ExcelWriter(pathTo)
+
+#Save to xlsx file
 poRurach.to_excel(writer, sheet_name='Po rurociągach')
 zbiorowe.to_excel(writer, sheet_name='Zbiorowe')
 
+#Write xlsx file
 writer.save()
