@@ -2,13 +2,8 @@ import pandas as pd
 import re
 import os
 from tkinter import *
-from tkinter import messagebox
 from tkinter import filedialog
 
-# pathFrom = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.TXT'
-# pathTo = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.xlsx'
-pathFrom = f'{os.path.dirname(os.path.realpath(__file__))}\BOLT.TXT'
-pathTo = f'{os.path.dirname(os.path.realpath(__file__))}\BOLT.xlsx'
 
 def main():
     pathFrom = BoltTextFile.get()
@@ -48,7 +43,7 @@ def main():
                     finalList.append(indexList.copy())
 
     src = pd.DataFrame(finalList,columns=['PIPLINE NAME','DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL'])
-    src[['SECTION','PN']] = ['ŚRUBY, NAKRĘTKI','-']
+    src['SECTION'] = 'ŚRUBY, NAKRĘTKI'
     src['DN1'] = [x[:3] for x in src['ITEM-CODE']]
     src['QUANTITY'] = [int(x) for x in src['QUANTITY']]
 
@@ -60,8 +55,8 @@ def main():
     zbiorowe = zbiorowe[['DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL']].groupby(['ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
 
 
-    zbiorowe = pd.merge(zbiorowe,src[['ITEM-CODE','SECTION','PN','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['ITEM-CODE','DESCRIPTION']).reset_index()
-    poRurach = pd.merge(poRurach,src[['ITEM-CODE','SECTION','PN','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).reset_index()
+    zbiorowe = pd.merge(zbiorowe,src[['ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['ITEM-CODE','DESCRIPTION']).reset_index()
+    poRurach = pd.merge(poRurach,src[['ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).reset_index()
 
     #Creating xlsx file
     writer = pd.ExcelWriter(pathTo)
@@ -85,7 +80,6 @@ def GetFile():
         BoltTextFile.insert(0,root.filename)
     #global InitialDir
     InitialDir = root.filename
-
 
 
 root = Tk()
