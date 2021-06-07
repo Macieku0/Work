@@ -1,8 +1,11 @@
 import pandas as pd
 import re
+import os
 
-pathFrom = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.TXT'
-pathTo = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.xlsx'
+# pathFrom = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.TXT'
+# pathTo = 'C:\\Users\\macie\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210601_BOLTS\\BOLT.xlsx'
+pathFrom = f'{os.path.dirname(os.path.realpath(__file__))}\\BOLT.TXT'
+pathTo = f'{os.path.dirname(os.path.realpath(__file__))}\\BOLT.xlsx'
 
 with open(pathFrom, 'r') as file:
     lines = file.readlines()
