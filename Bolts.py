@@ -3,12 +3,12 @@ import re
 import os
 from tkinter import *
 from tkinter import filedialog
-
+from tkinter import messagebox
 
 def main():
     pathFrom = BoltTextFile.get()
     pathTo = f'{PathEntry.get()}BOLT.xlsx'
-    with open(pathFrom, 'r') as file:
+    with open(pathFrom, 'r', encoding='utf8') as file:
         lines = file.readlines()
         finalList = []
         global indexList
@@ -67,6 +67,8 @@ def main():
 
     #Write xlsx file
     writer.save()
+    messagebox.showinfo('Raport Gotowy!',f'Plik został zapisany pod scieżką: {pathTo}')
+
 
 global InitialDir  
 InitialDir = 'C:\\PR\\'
@@ -97,7 +99,7 @@ root.geometry('400x75')
 BoltTextFile = Entry(root, width=40,borderwidth=2)
 BoltTextFile.insert(0,'C:\\PR\\BOLT.txt')
 BoltTextFile.grid(column=1,row=0)
-GetBoltPathButton = Button(root, text='Get path to .txt file',command=GetFile,width=20).grid(column=0,row=1)
+GetBoltPathButton = Button(root, text='Get path to .txt file',command=GetFile,width=20).grid(column=0,row=0)
 
 #Scieżka do plików
 PathEntry = Entry(root, width=40,borderwidth=2)
