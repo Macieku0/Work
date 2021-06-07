@@ -7,7 +7,7 @@ from tkinter import filedialog
 
 def main():
     pathFrom = BoltTextFile.get()
-    pathTo = f'{os.path.dirname(pathFrom)}\BOLT.xlsx'
+    pathTo = f'{PathEntry.get()}BOLT.xlsx'
     with open(pathFrom, 'r') as file:
         lines = file.readlines()
         finalList = []
@@ -80,7 +80,14 @@ def GetFile():
         BoltTextFile.insert(0,root.filename)
     #global InitialDir
     InitialDir = root.filename
-
+def GetFolderDir():
+    global InitialDir  
+    root.filename = filedialog.askdirectory(initialdir=InitialDir,title='Choose folder Directory',)
+    if root.filename != '':
+        PathEntry.delete(0,END)
+        PathEntry.insert(0,root.filename + '/')
+    #global InitialDir 
+    InitialDir = root.filename
 
 root = Tk()
 root.title('Bolts MTO Creator')
@@ -89,7 +96,14 @@ root.geometry('400x75')
 #Nazwa raportu PDMS
 BoltTextFile = Entry(root, width=40,borderwidth=2)
 BoltTextFile.insert(0,'C:\\PR\\BOLT.txt')
-BoltTextFile.grid(column=1,row=1)
+BoltTextFile.grid(column=1,row=0)
 GetBoltPathButton = Button(root, text='Get path to .txt file',command=GetFile,width=20).grid(column=0,row=1)
+
+#Scieżka do plików
+PathEntry = Entry(root, width=40,borderwidth=2)
+PathEntry.insert(0,'C:\\PR\\')
+PathEntry.grid(column=1,row=1)
+PathButton = Button(root, text='Get folder directory',command=GetFolderDir,width=20).grid(column=0,row=1)
+
 StartButton = Button(root,text='Start',command=main,height=1,width=20).grid(column=0,columnspan=2)
 root.mainloop()
