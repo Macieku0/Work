@@ -19,7 +19,7 @@ def main():
                 a = str(line)
                 if (len(a) <= 111 and len(a) >= 106):
                     description = a[2:40]
-                    itemCode = a[70:92]
+                    itemCode = a[70:91]
                     quantity = re.sub('\n','',a[108:111])
                 if (len(a) <= 50 and len(a) >= 10):
                     if a[1:9] == 'PIPELINE':
@@ -46,6 +46,8 @@ def main():
     src['SECTION'] = 'ŚRUBY, NAKRĘTKI'
     src['DN1'] = [x[:3] for x in src['ITEM-CODE']]
     src['QUANTITY'] = [int(x) for x in src['QUANTITY']]
+    src[['PN','THICKNESS','DN2','NAME']] = ['-','-','-','-']
+    
 
     poRurach = src.copy()
     poRurach = poRurach[['PIPLINE NAME','ITEM-CODE','DESCRIPTION','QUANTITY','MATERIAL']].groupby(['PIPLINE NAME','ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
@@ -55,15 +57,15 @@ def main():
     zbiorowe = zbiorowe[['DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL']].groupby(['ITEM-CODE','DESCRIPTION','MATERIAL']).sum().reset_index()
 
 
-    zbiorowe = pd.merge(zbiorowe,src[['ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['ITEM-CODE','DESCRIPTION']).reset_index()
-    poRurach = pd.merge(poRurach,src[['ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).reset_index()
+    zbiorowe = pd.merge(zbiorowe,src[['PN','THICKNESS','DN2','NAME','ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['ITEM-CODE','DESCRIPTION']).reset_index()
+    poRurach = pd.merge(poRurach,src[['PN','THICKNESS','DN2','NAME','ITEM-CODE','SECTION','DN1']],on=['ITEM-CODE'],how='outer').drop_duplicates(['PIPLINE NAME','ITEM-CODE','DESCRIPTION']).reset_index()
 
     #Creating xlsx file
     writer = pd.ExcelWriter(pathTo)
 
     #Save to xlsx file
-    poRurach[['SECTION','PIPLINE NAME','ITEM-CODE','DN1','DESCRIPTION','MATERIAL','QUANTITY']].to_excel(writer, sheet_name='Po rurociągach')
-    zbiorowe[['SECTION','ITEM-CODE','DN1','DESCRIPTION','MATERIAL','QUANTITY']].to_excel(writer, sheet_name='Zbiorowe')
+    poRurach[['PIPLINE NAME','SECTION','ITEM-CODE','PN','MATERIAL','THICKNESS','DN1','DN2','DESCRIPTION','QUANTITY']].to_excel(writer, sheet_name='Po rurociągach')
+    zbiorowe[['SECTION','ITEM-CODE','PN','MATERIAL','THICKNESS','DN1','DN2','NAME','DESCRIPTION','QUANTITY']].to_excel(writer, sheet_name='Zbiorowe')
 
     #Write xlsx file
     writer.save()
