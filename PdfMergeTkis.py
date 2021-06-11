@@ -45,7 +45,7 @@ def countPages(a,b):
     filesList = []
     for root, dirs,files in os.walk(a):
         for file in files:
-            if file != b:
+            if file != b and file in pidList:
                 pdf = PdfFileReader(f'{a}{file}')
                 length += pdf.getNumPages()
                 filesList.append(file)
@@ -62,16 +62,11 @@ if __name__ == '__main__':
     SecondDir = Directory + "/Secondary/"
     #List of main documents
     MainList = []
+    global pidList
+    pidList = []
 
-
-
-
-    #Listing all main documents
-    # for root, dirs,files in os.walk(MainDir):
-    #     for file in files:
-    #         if file.endswith(".pdf"):
-    #             MainList.append(file)
     MainList = ['200-ANS72-3311070-EC07CPC-S60.pdf']
+
     for file in MainList:
         MainDir = f'{Directory}{file[:file.index(".pdf")]}\\'
         length, secondList = countPages(MainDir,file)
