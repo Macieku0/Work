@@ -1,6 +1,5 @@
 import os
 
-i = 0
 lista = ['']
 # rozszerzenie plików które mają być skopiowane
 extension = '.pdf'
@@ -18,6 +17,8 @@ def createList (dir, ext):
 
 #Funckja główna
 def main():
+    global i
+    i = 0
     for root,dirs,files in os.walk(dirPathFrom):
         pdfs = createList(os.path.join(root),extension)
         for pdf in pdfs:
