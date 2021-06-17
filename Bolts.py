@@ -12,35 +12,71 @@ def main():
         lines = file.readlines()
         finalList = []
         global indexList
-        indexList = ['','','','','']
-        i = 0
+        indexList = ['','','','']
+        i = -1
         for line in lines:
-            if not line.isspace():
-                a = str(line)
-                if (len(a) <= 111 and len(a) >= 106):
-                    description = a[2:40]
-                    itemCode = a[70:91]
-                    quantity = re.sub('\n','',a[108:111])
-                if (len(a) <= 50 and len(a) >= 10):
-                    if a[1:9] == 'PIPELINE':
-                        indexList = ['','','','','']
-                        pipeline = re.sub('\n','',a[14:len(a)])
-                        indexList[0] = pipeline
-                    elif a[5:7] == a.split()[0][0:2]:
-                        secondDesc = re.sub('\n','',a[5:len(a)])
-                        description = description + ', ' + secondDesc
+                if not line.isspace():
+                    a = str(line)
+                    
+                    #Nowy rurociąg - dodanie nazwy oraz stworzenie nowej listy
+                    if 'PIPELINE' in a:
+                            indexList = ['','','','']
+                            pipeline = re.sub('\n','',a[14:len(a)])
+                            indexList[0] = pipeline
+                            
+                    #Jeśli długa linia - pierwszy opis z ilością, opisem i item-codem
+                    if (len(a) <= 112 and len(a) >= 106):
+                        #Opis
+                        description = re.sub('  ',' ',a[0:44])
+                        description = re.sub('  ',' ',description)
+                        #Item-code
+                        itemCode = re.sub(' ','',a[70:100])
+                        #Ilość
+                        quantity1 = re.sub(' ','',re.sub('\n','',a[100:108]))
+                        quantity2 = re.sub('\n','',a[108:111])
+                        
+                        if quantity1 == '0':
+                            quantity = quantity2
+                        else:
+                            quantity = quantity1
+                            
                         indexList[1] = description
                         indexList[2] = itemCode
                         indexList[3] = quantity
-                        indexList[4] = secondDesc
-                        i += 1
+                        
                         finalList.append(indexList.copy())
-                if (len(a) <= 10 and len(a) >= 0):
-                    material = re.sub('\n','',a[5:len(a)])
-                    indexList[1] = description + ', ' + material
-                    indexList[4] = material
-                    del finalList[i-1]
-                    finalList.append(indexList.copy())
+                        i += 1
+                        
+                    #Jeśli krótka linia - drugi opis
+                    if (len(a) <= 50 and len(a) >= 10):
+                        #Sprawdzanie czy to druga linia opisu
+                        if a.split()[0][0:2] in a[5:7]:
+                            
+                            secondDesc = re.sub('  ',' ',re.sub('\n','',a[5:len(a)]))
+                            description = f'{description}{secondDesc}'
+                            description = re.sub('  ',' ',description)
+                            indexList[1] = description
+                        
+                            del finalList[i]
+                            finalList.append(indexList.copy())
+                            
+                    #Jeśli trzecia linia - trzeci opis
+                    if (len(a) <= 10 and len(a) >= 0):
+                        
+                        thirdDesc = re.sub(' ','',re.sub('\n','',a[5:len(a)]))
+                        description = f'{description}{thirdDesc}'
+                        
+                        description = re.sub('  ',' ',description)
+                        indexList[1] = description
+                        
+                        del finalList[i]
+                        finalList.append(indexList.copy())
+                    
+    for item in finalList:
+        description = item[1]
+        #Adding material
+        item.append(description[description.find(';')+2:])
+
 
     src = pd.DataFrame(finalList,columns=['PIPLINE NAME','DESCRIPTION','ITEM-CODE','QUANTITY','MATERIAL'])
     src['SECTION'] = 'ŚRUBY, NAKRĘTKI'
