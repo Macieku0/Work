@@ -52,6 +52,12 @@ def main():
                                 quantity = quantity1
                                 
                             indexList[1] = description
+
+                            if itemCode[7:10] == 'AAA' and len(itemCode[21:len(itemCode)]) == 3:
+                                itemCode = itemCode[0:7] + itemCode[21:len(itemCode)] + itemCode[10:21]
+                            elif itemCode[7:10] == 'AAA' and len(itemCode[21:len(itemCode)]) == 2:
+                                itemCode = itemCode[0:7] + itemCode[21:len(itemCode)] + '-' + itemCode[10:21]
+
                             indexList[2] = itemCode
                             indexList[3] = quantity
                             indexList[4] = length
