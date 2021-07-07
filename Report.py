@@ -5,11 +5,21 @@ import matplotlib.pyplot as plt
 import re
 
 
-def colNameToColNumber(col_name):
-    if not re.search(r'\d',col_name):
-        col_name = col_name.upper()
+def rangeLetter(cells):
+    if not re.search(r'\d',cells):
+        range_letter = cells.upper()
     else:
-        col_name = col_name[:re.search(r'\d',col_name).start()].upper()
+        range_letter = cells[:re.search(r'\d',cells).start()].upper()
+    return range_letter
+
+
+def rangeNumber(cells):
+    range_number = cells[re.search(r'\d',cells).start():]
+    return range_number
+
+
+def colNameToColNumber(col_name):
+    col_name = rangeLetter(col_name)
     if len(col_name) == 1:
         col_number = ord(col_name[0]) - 64
     elif len(col_name) == 2:
@@ -34,7 +44,7 @@ def colNumberToColLetter(col_number):
 def adjustRangeFormat(start_cell,src,writer,sheet,index):
     length = src.shape[0]
     width = src.shape[1]
-    end_cell = colNumberToColLetter(colNameToColNumber(start_cell)+width-index) + str(int(start_cell[re.search(r'\d',start_cell).start():]) + length)
+    end_cell = colNumberToColLetter(colNameToColNumber(start_cell)+width-index) + str(int(rangeNumber(start_cell)) + length)
 
     format_text = writer.book.add_format()
     column_align = writer.book.add_format({'align':'center'})
@@ -61,7 +71,7 @@ def adjustRangeFormat(start_cell,src,writer,sheet,index):
         else:
             writer.sheets[sheet].set_column(col_index,col_index,width +1,column_wrap)
 
-
+    return [start_cell,end_cell]
 
 def countProgress(src,zone):
     src = src[src['Zone'] == zone]
@@ -81,6 +91,34 @@ def removeHelp(src):
     help_del = help_del[['Zone','Name','Type','Status','User','Designer']]
     return help_del
 
+def create_chart(writer,workbook,sheet,cells):
+    chart = workbook.add_chart({'type':'column'})
+    by_series = False
+    if by_series:
+        end_column = colNumberToColLetter(colNameToColNumber(cells[1]) + 2)
+        start_row = int(rangeNumber(cells[0])) + 1
+        end_row = int(rangeNumber(cells[1]))
+        for x in range(start_row,end_row):
+            chart.add_series({
+                'values':f'={sheet}!$D${x}:$D${x}',
+                'categories':f'={sheet}!$B${x}:$B${x}',
+                'name':f'={sheet}!$B${x}:$B${x}'
+            })
+        chart.set_title({'name':f'={sheet}!$A${start_row}:$A${start_row}'})
+        chart.set_table()
+        writer.sheets[sheet].insert_chart(f'{end_column}{start_row}',chart)
+    else:
+        end_column = colNumberToColLetter(colNameToColNumber(cells[1]) + 2)
+        start_row = int(rangeNumber(cells[0])) + 1
+        end_row = int(rangeNumber(cells[1]))
+        chart.add_series({
+            'values':f'={sheet}!$D${start_row}:$D${end_row}',
+            'categories':f'={sheet}!$B${start_row}:$B${end_row}',
+            'name':f'={sheet}!$D${start_row-1}:$D${start_row-1}'
+        })
+        chart.set_title({'name':f'={sheet}!$A${start_row}:$A${start_row}'})
+        chart.set_table()
+        writer.sheets[sheet].insert_chart(f'{end_column}{start_row}',chart)
 
 if __name__ == '__main__':
 
@@ -94,7 +132,6 @@ if __name__ == '__main__':
     workbook = writer.book
     column_align = writer.book.add_format({'align':'center'})
     column_wrap = writer.book.add_format({'align':'center','text_wrap':True})
-
 
     src1 = removeHelp(src1)
     src1['Zone'] = [x[1:x.find('.')] for x in src1['Zone']]
@@ -121,9 +158,10 @@ if __name__ == '__main__':
         template_sheet = template(zone)
         globals()[f'Z_{zone}'],globals()[f'Z_{zone}_suma'] = countProgress(pipe,zone)
         globals()[f'Z_{zone}'] = template_sheet.append(globals()[f'Z_{zone}']).groupby(['Zone','Status','Progress']).max().reset_index()
-
         
-        adjustRangeFormat(f'A{i+1}',globals()[f'Z_{zone}'],writer,'Status',1)
+        cells = adjustRangeFormat(f'A{i+1}',globals()[f'Z_{zone}'],writer,'Status',1)
+
+        create_chart(writer,workbook,'Status',cells)
 
         worksheet.write(f'D{i+11}','Suma')
         worksheet.write(f'E{i+11}',globals()[f'Z_{zone}_suma'])
@@ -139,5 +177,3 @@ if __name__ == '__main__':
         i +=12
 
     writer.save()
-# ax = pipe.T.plot(kind = 'bar')
-# ylab = ax.set_ylabel('Values')
