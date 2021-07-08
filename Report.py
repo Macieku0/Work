@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 
-
 def rangeLetter(cells):
     if not re.search(r'\d',cells):
         range_letter = cells.upper()
@@ -158,9 +157,10 @@ if __name__ == '__main__':
         template_sheet = template(zone)
         globals()[f'Z_{zone}'],globals()[f'Z_{zone}_suma'] = countProgress(pipe,zone)
         globals()[f'Z_{zone}'] = template_sheet.append(globals()[f'Z_{zone}']).groupby(['Zone','Status','Progress']).max().reset_index()
-        
-        cells = adjustRangeFormat(f'A{i+1}',globals()[f'Z_{zone}'],writer,'Status',1)
 
+        cells = adjustRangeFormat(f'A{i+1}',globals()[f'Z_{zone}'],writer,'Status',1)
+        
+        # print(chart_data)
         create_chart(writer,workbook,'Status',cells)
 
         worksheet.write(f'D{i+11}','Suma')
