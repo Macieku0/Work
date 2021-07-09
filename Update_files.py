@@ -1,9 +1,7 @@
 import openpyxl
 from openpyxl.styles import PatternFill
 from openpyxl.comments import Comment
-import pandas
 import os
-import win32api
 from win32com import client
 from timeit import default_timer as timer
 
@@ -21,7 +19,7 @@ WorkSheetName = "PY"
 Col_lett = "C"
 #Range of column with names of files
 ColStart = 7
-ColEnd = 386
+ColEnd = 37
 #Template name
 TemplateName = "karta_wpalki-24.05.2021.xlsx"
 #Name of template worksheet 
@@ -43,9 +41,8 @@ Map = {
 'D7':'F',
 'F7':'D',
 'I7':'G',
-'K7':'Z',
-'L7':'J',
-'M7':'E',
+'M7':'J',
+'K7':'E',
 'N7':'Y',
 'O7':'K',
 'P7':'AA',
@@ -69,51 +66,51 @@ Map = {
 'I25':'AD'}
 
 #Creating a list of all files name
-source = openpyxl.load_workbook(MainDir + TemplateName)
-wb = openpyxl.load_workbook(MainDir + ListName)
-worksheet = wb[WorkSheetName]
-i = 0
-for z in range(ColStart,ColEnd):
-    file = worksheet[f'{Col_lett}{z}'].value
-    NewFileName = f'{FilesDir}{file}_between'
-    #Check if file already exist
-    if os.path.isfile(f'{NewFileName}.xlsx'):
-        print(f'{file}_between.xlsx already exist')
-        NewFile = openpyxl.load_workbook(f'{NewFileName}.xlsx')
-        NewWorksheet = NewFile[TemplateWorkSheetName]
-        #Fullfil created files with data from list
-        for x,y in Map.items():
-            if NewWorksheet[x].value != worksheet[f'{y}{z}'].value:
-                comment = Comment(f'Previous value = {NewWorksheet[x].value}','automatic inspect')
+try:
+    source = openpyxl.load_workbook(MainDir + TemplateName)
+    wb = openpyxl.load_workbook(MainDir + ListName)[WorkSheetName]
+    worksheet = wb[WorkSheetName]
+    i = 0
+    for z in range(ColStart,ColEnd):
+        file = worksheet[f'{Col_lett}{z}'].value
+        NewFileName = f'{FilesDir}{file}_between'
+        #Check if file already exist
+        if os.path.isfile(f'{NewFileName}.xlsx'):
+            print(f'{file}_between.xlsx already exist')
+            NewFile = openpyxl.load_workbook(f'{NewFileName}.xlsx')
+            NewWorksheet = NewFile[TemplateWorkSheetName]
+            #Fullfil created files with data from list
+            for x,y in Map.items():
+                if NewWorksheet[x].value != worksheet[f'{y}{z}'].value:
+                    comment = Comment(f'Previous value = {NewWorksheet[x].value}','automatic inspect')
+                    NewWorksheet[x].value = worksheet[f'{y}{z}'].value
+                    NewWorksheet[x].fill = PatternFill(fgColor=MyColor, fill_type="solid")
+                    NewWorksheet[x].comment = comment
+            NewFile.save(f'{NewFileName}.xlsx')
+            WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
+            WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+            WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
+            WbPrint.Close()
+            excel.Quit()
+            NewFile.close()
+        else:
+            #Fullfil created files with data from list
+            NewWorksheet = source[TemplateWorkSheetName]
+            for x,y in Map.items():
                 NewWorksheet[x].value = worksheet[f'{y}{z}'].value
-                NewWorksheet[x].fill = PatternFill(fgColor=MyColor, fill_type="solid")
-                NewWorksheet[x].comment = comment
-        NewFile.save(f'{NewFileName}.xlsx')
-        WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
-        WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
-        WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
-        WbPrint.Close()
-        excel.Quit()
-        NewFile.close()
-    else:
-        #If no so create one
-        source.save(f'{NewFileName}.xlsx')
-        source.close()
-        #Fullfil created files with data from list
-        NewFile = openpyxl.load_workbook(f'{NewFileName}.xlsx')
-        NewWorksheet = NewFile[TemplateWorkSheetName]
-        for x,y in Map.items():
-            NewWorksheet[x].value = worksheet[f'{y}{z}'].value
-        NewFile.save(f'{NewFileName}.xlsx')
-        WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
-        WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
-        WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
-        WbPrint.Close()
-        excel.Quit()
-        NewFile.close()
-    i += 1
-    #Close list
-wb.close()
-end = timer()
-print(end-start)
-
+            source.save(f'{NewFileName}.xlsx')
+            WbPrint = excel.Workbooks.Open(f'{NewFileName}.xlsx')
+            WsPrint = WbPrint.Worksheets[TemplateWorkSheetName]
+            WbPrint.SaveAs(f"{NewFileName}.pdf",FileFormat=57)
+            WbPrint.Close()
+            excel.Quit()
+        i += 1
+        #Close list
+    source.close()
+    wb.close()
+    end = timer()
+    print(end-start)
+except:
+    source.close()
+    wb.close()
+    excel.Quit()
