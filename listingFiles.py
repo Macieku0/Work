@@ -4,9 +4,11 @@ lista = ['']
 # rozszerzenie plików które mają być skopiowane
 extension = '.pdf'
 # Scieżka z której mają być kopiowanie pliki
-dirPathFrom = "G:/#2019/190018/M/EXPORT/"
+dirPathFrom = "G:/#2019/190018/M/PT/UDT/PED/dokumentacja rejestracyjna/ZDT/"
+# dirPathFrom = "C:\\Users\\macie\\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210611_REGISTRATION_UDT"
 # Scieżka do której mają być kopiowane pliki
-dirPathTo = 'G:/#2019/190018/M/POMOC/MU/PDFY/'
+dirPathTo = 'G:/#2019/190018/M/PT/UDT/PED/dokumentacja rejestracyjna/ZDT/'
+# dirPathTo = "C:\\Users\\macie\\Pulpit\\III_CAT_SPRAWDZENIE_SRUB\\20210611_REGISTRATION_UDT"
 
 #Scieżka pod którą zostanie zapisany wykaz skopiowanych plików
 fullList = open(f'{dirPathTo}/wykaz_plikow.txt', 'w')
@@ -23,12 +25,10 @@ def main():
         pdfs = createList(os.path.join(root),extension)
         for pdf in pdfs:
             i += 1
-            entry =  f'{i}. {pdf} z folderu {os.path.join(root)}\n' 
+            entry =  f'{i}|{pdf}|{os.path.join(root)}\n' 
             lista.append(entry)
 
-#Wiadomość końcowa
-print(f'Skończone, skopiowano {i},plików z rozszerzeniem {extension}')
-
 #Zapis wykazu
+main()
 fullList.writelines(lista)
 fullList.close()
