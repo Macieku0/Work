@@ -1,8 +1,8 @@
-#Listowanie kombinacji dla danego raportu
-
-from os import supports_dir_fd
 import pandas as pd
 
+
+
+#Listowanie kombinacji dla danego raportu
 def CombinationsList(path):
     #Wczytanie pliku autopipe
     AutoPipeFile = pd.read_excel(f'{path}')

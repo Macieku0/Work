@@ -1,30 +1,56 @@
-from numpy.core.fromnumeric import sort
 import pandas as pd
 import numpy as np
 import math
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
-from PIL import ImageTk, Image
-from timeit import default_timer
-import pathlib
 from functools import reduce
 from Combinations import CombinationsList
+import os
+from datetime import date
+
+#Tworzenie folderu w podanej ścieżce i nadpisanie ścieżki generowania raportu
+def create_folder(dir):
+    dir_path = f'{dir}{date.today()}_report'
+    x = 0 
+    while True:
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+            dir_path = f'{dir_path}\\'
+            break
+        elif not os.path.exists(f'{dir_path}_{x}'):
+            os.mkdir(f'{dir_path}_{x}')
+            dir_path = f'{dir_path}_{x}\\'
+            break
+        else:
+            x += 1
+    return dir_path
+
 
 #Obliczanie cosinusa z podanego kąta
 def cos(x):
     return math.cos(math.radians(float(x))) 
+
+
 #Obliczanie sinusa z podanego kąta
 def sin(x):
     return math.sin(math.radians(float(x)))
+
+
 #Czyszczenie katów z dopiska degree
 def clean_angles(x):
     return x[x.rfind(' ')+1:len(x)]
+
+
 #Czyszczenie nazw zamocowań z '/'
 def clean_name(x):
     return x[1:len(x)]
+
+
 #Obliczanie sił lokalnych na podstawie wartości globalnych i ułożenia w płaszczyźnie
-def force(x): #'FX' - 0,'FY' - 1,'ORIANGLE' - 2,'COS' - 3,'SIN' - 4
+#Oznaczenia wartośći w tablicy [x] jak poniżej
+#'FX' - 0,'FY' - 1,'ORIANGLE' - 2,'COS' - 3,'SIN' - 4
+def force(x): 
     if ((float(x[2]) + 360)%360) >= 180:
         FxCos = (float(x[0]) * float(x[3]))
         FxSin = (float(x[0]) * float(x[4]))
@@ -38,9 +64,13 @@ def force(x): #'FX' - 0,'FY' - 1,'ORIANGLE' - 2,'COS' - 3,'SIN' - 4
     x['FA'] = float('{:.2f}'.format(FxCos + FySin))
     x['FL'] = float('{:.2f}'.format(FxSin + FyCos))
     return x[['FA','FL']]
+
+
 #Wstępna lokalizacja do wyboru folderów / plików
 global InitialDir  
 InitialDir = 'C:/'
+
+
 # Wybieranie ścieżki dla raportu PDMS
 def GetPDMS():
     global InitialDir  
@@ -48,8 +78,9 @@ def GetPDMS():
     if root.filename != '':
         PDMSEntry.delete(0,END)
         PDMSEntry.insert(0,root.filename)
-    #global InitialDir
     InitialDir = root.filename
+
+
 #Wybieranie ścieżki dla raportu AutoPipe
 def GetAutoPipe():
     global InitialDir  
@@ -57,8 +88,9 @@ def GetAutoPipe():
     if root.filename != '':
         AutoPipeEntry.delete(0,END)
         AutoPipeEntry.insert(0,root.filename)
-    #global InitialDir 
     InitialDir = root.filename
+
+
 #Wybieranie ścieżki dla folderu
 def GetFolderDir():
     global InitialDir  
@@ -66,9 +98,10 @@ def GetFolderDir():
     if root.filename != '':
         PathEntry.delete(0,END)
         PathEntry.insert(0,root.filename + '/')
-    #global InitialDir 
     InitialDir = root.filename
 
+
+#Funkcja wyciągająca nazwy kombinacji które zostały wybrane przez użytkownika i podaje w osobnym oknie
 def ChooseCom():
     global ChoosedCom
     ChoosedCom = []
@@ -82,16 +115,25 @@ def ChooseCom():
     for x in ChoosedCom:
         x = Label(ChoosedComWindow,text=x).pack()
 
+
+# Funkcja genrująca kombinacje z pliku autopipe jako forma wyboru dla użytkowników
 def OpenComWindow():
     global AllCom
     AutoPipe = AutoPipeEntry.get()
+    #Sprawdzanie czy została podana ścieżka do pliku autopipe
     if AutoPipe == '':
         messagebox.showerror('Brak danych!','Podaj ścieżkę do raportu z AutoPipe')
         return
+    
+    #Generuownie listy kombinacji z pliku
     list = CombinationsList(AutoPipe)
+
+    #Tworzenie okienka z kombinacjami
     ComWindow = Toplevel(root)
     ComWindow.title('Choose Combinations')
     ComWindow.geometry('400x250')
+
+    #Tworzenie checkboxów w trzech kolumnach
     i = 0
     AllCom =[]
     for x in list:
@@ -104,36 +146,66 @@ def OpenComWindow():
             Checkbutton(ComWindow,text=x,variable=strVar, onvalue=x,offvalue='').grid(column=2,row=i-13)
         i += 1
         AllCom.append(strVar)   
+
     #Przycisk potwierdzający wybór zaznaczonych kombinacji
-    ConfirmCom = Button(ComWindow,text='Confirm choice',command=ChooseCom).grid(column=0,columnspan=3)
+    Button(ComWindow,text='Confirm choice',command=ChooseCom).grid(column=0,columnspan=3)
+
+
+#--------------------------------------------------------------------------------------------------------------------------
+#Główny program liczący
 
 if __name__ == '__main__':
     def startProgram():
+
+        #Sprawdzenie czy użytkonik wygbrał kombinacje do dalszej pracy programu
         if ChoosedCom == None:
             messagebox.showerror('Brak danych!','Kombinacje nie zostały wybrane')
             return
+
+        #Pobranie wyrbanych przez użytkownika ścieżek do plików i do zapisu raportu
         Path = PathEntry.get()
         PDMS = PDMSEntry.get()
         AutoPipe = AutoPipeEntry.get()
+
+
+        #Stworzenie folderu i nadpisanie ścieżki
+        Path = create_folder(Path)
+
         #Załadowanie kombinacji z drugiego okna
         Com = ChoosedCom
+
+
         #Nazwa raportu wyjściowego
         Out = 'Raport_policzony.xlsx'
 
+
         #Wczytanie pliku pdms i podział na kolumny
         PdmsFile = pd.read_csv(f'{PDMS}',sep='|',decimal='.')
+
+
         #Czyszczenie danych
         PdmsFile = PdmsFile.replace("=","'=",regex=True)
         PdmsFile = PdmsFile.replace('degree','',regex=True)
         PdmsFile['ORIANGLE'] = [clean_angles(oriangle) for oriangle in PdmsFile['ORIANGLE']]
         PdmsFile['NAME'] = [clean_name(name) for name in PdmsFile['NAME']]
+
+
         #Obliczanie sinusów i cosinusów
         PdmsFile['SIN'] = [sin(oriangle) for oriangle in PdmsFile['ORIANGLE']]
         PdmsFile['COS'] = [cos(oriangle) for oriangle in PdmsFile['ORIANGLE']]
+
+
+        #Określanie czy rurociąg jest poziomy czy pionowy
+        PdmsFile['Vertical'] = ["YES" if (x[:1] in ["D","U"]) else "NO" for x in PdmsFile['ADIR'] ]
+        print(PdmsFile)
+
+
         #Zmiana nazwy kolumny
         PdmsFile.rename(columns={'DTXR':'Description','Position WRT Owner':'WRT','NAME':'Name'},inplace=True)
+
         #Obrabianie Koordynatów
-        PdmsFile[['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']] = [[x[:x.find('mm')],x[x.find('mm')+3:x.find('mm',x.find('mm')+3)],x[x.find('mm',x.find('mm')+3)+3:len(x)-2]] for x in PdmsFile['WRT']]
+        PdmsFile[['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']] = [[x[:x.find('mm')],x[x.find('mm')+3:x.find('mm',x.find('mm')+3)],x[x.find('mm',x.find('mm')+3)+3:len(x)-2]] 
+        for x in PdmsFile['WRT']]
         PdmsFile['PDMS - CoodX'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoodX']]
         PdmsFile['PDMS - CoordY'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoordY']]
         PdmsFile['PDMS - CoordZ'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoordZ']]
@@ -142,22 +214,41 @@ if __name__ == '__main__':
 
         #Wczytanie pliku autopipe
         AutoPipeFile = pd.read_excel(f'{AutoPipe}')
+
+
         #Selekcja kolumn
         AutoPipeFile = AutoPipeFile[['Tag No.','Combination','GlobalFX','GlobalFY','GlobalFZ','CoordX','CoordY','CoordZ']]
-        #Usuwanie pierwszego wiersza
+
+        #Usuwanie pierwszego wiersza - wiersza z jednostkami
         AutoPipeFile = AutoPipeFile.drop(0)
-        #Filtrowanie po wybranych kombinacjach obliczeniowych
+
+        #Filtrowanie po wybranych przez użytkownika kombinacjach obliczeniowych
         AutoPipeFile = AutoPipeFile[AutoPipeFile['Combination'].isin(Com)]
-        #Zmiana danych na liczbowe
+
+        #Zmiana danych na liczbowe, zmiennoprzecinkowe
         AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']] = AutoPipeFile[['GlobalFX','GlobalFY','GlobalFZ']].astype(float)
+
         #Zmiana nazw kolummn
-        AutoPipeFile.rename(columns={'Tag No.':'Name','GlobalFZ':'FZ','GlobalFX':'FX','GlobalFY':'FY','CoordX':'AutoPipe - CoordX','CoordY':'AutoPipe - CoordY','CoordZ':'AutoPipe - CoordZ'},inplace=True)
+        AutoPipeFile.rename(columns={'Tag No.':'Name',
+        'GlobalFZ':'FZ',
+        'GlobalFX':'FX',
+        'GlobalFY':'FY',
+        'CoordX':'AutoPipe - CoordX',
+        'CoordY':'AutoPipe - CoordY',
+        'CoordZ':'AutoPipe - CoordZ'},inplace=True)
+
+
         #Czyszczenie nazw z "\"
         AutoPipeFile['Name'] = [clean_name(name) for name in AutoPipeFile['Name']]
+        #Selekcja kolumn do matrycy
         AutoPipeFileCoord = AutoPipeFile[['Name','AutoPipe - CoordX','AutoPipe - CoordY','AutoPipe - CoordZ']]
+
+
         #Sumowanie wartości dla kombinacji obliczeniowej dla każdego zamocowania
         AutoPipeFile = AutoPipeFile.groupby(['Name','Combination']).sum().reset_index()
-        #Obrabianie Koordynatów
+
+
+        #Wycinanie wartości koordynatów tak aby zostały tylko wartości liczbowe
         AutoPipeFileCoord['AutoPipe - CoordX'] = [np.absolute(int(x[:str(x).find('.')])) for x in AutoPipeFileCoord['AutoPipe - CoordX']]
         AutoPipeFileCoord['AutoPipe - CoordY'] = [np.absolute(int(x[:str(x).find('.')])) for x in AutoPipeFileCoord['AutoPipe - CoordY']]
         AutoPipeFileCoord['AutoPipe - CoordZ'] = [np.absolute(int(x[:str(x).find('.')])) for x in AutoPipeFileCoord['AutoPipe - CoordZ']]
@@ -165,6 +256,7 @@ if __name__ == '__main__':
 
 
         #MAX,MIN,EXTREMUM Colums
+        #Na podstawie wybranych opcji (min,max,ext) wybór dla każdego zamocowania odpowiedniej wartości
         Conditions = [Extremum.get(),Maximum.get(),Minimum.get()]
         allDf = []
         if Extremum.get() != '':
@@ -198,20 +290,23 @@ if __name__ == '__main__':
             AutoPipeFileFzMAX = pd.merge(AutoPipeFileFzMAX,AutoPipeFile[['FZ','Combination']],on='FZ',how='left').rename(columns={'Combination':'Maximum - CombinationFz','FZ':'Maximum - FZ'}).drop_duplicates('Name')
             allDf.extend([AutoPipeFileFxMAX,AutoPipeFileFyMAX,AutoPipeFileFzMAX])
 
-        #Łączenie wszystkich osi razem do jednego pliku
+
+        #Łączenie sił ze wszystkich płaszczyzn do jednej tablicy
         MergedData = reduce(lambda x,y: pd.merge(x,y,on=['Name'],how='outer'),allDf)
+
         #Usuwanie duplikatów
         MergedData.drop_duplicates('Name')
-        MergedData.to_excel(f'{Path}{Out}') 
  
+
         #Łączenie danych z PDMS'a i AutoPipe'a
-        FinalList = ['Name','Description']
+        FinalList = ['Name','Description','Vertical']
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - CombinationFx',f'{x} - FX',f'{x} - CombinationFy',f'{x} - FY',f'{x} - CombinationFz',f'{x} - FZ'])
+        FinalReport = pd.merge(MergedData,PdmsFile[['Name','ORIANGLE','SIN','COS','Description','PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ','Vertical']],on='Name',how='left')
 
-        FinalReport = pd.merge(MergedData,PdmsFile[['Name','ORIANGLE','SIN','COS','Description','PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']],on='Name',how='left')
-        #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X Y
+
+        #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X i Y
         #MAX,MIN,EXTREMUM Colums
         allDf = []
         if Extremum.get() != '':
@@ -231,46 +326,63 @@ if __name__ == '__main__':
             allDf.append(FinalReportMAX)
 
         allDf.append(AutoPipeFileCoord)
-        #Łączenie raportów z siłami
+        #Łączenie raportów z siłami lokalnymi do głównej tablicy
         FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['Name'],how='outer'),allDf)
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
 
-        #Sprawdzanie poprawności koordynatów
+        #Tworzenie kolumn z deltą koordynatów PDMS vs AutoPipe
         FinalReport['Difference  - CoordX'] = np.absolute(FinalReport['AutoPipe - CoordX'] - FinalReport['PDMS - CoodX'])
         FinalReport['Difference  - CoordY'] = np.absolute(FinalReport['AutoPipe - CoordY'] - FinalReport['PDMS - CoordY'])
         FinalReport['Difference  - CoordZ'] = np.absolute(FinalReport['AutoPipe - CoordZ'] - FinalReport['PDMS - CoordZ'])
-        FinalList.extend(['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ','AutoPipe - CoordX','AutoPipe - CoordY','AutoPipe - CoordZ','Difference  - CoordX','Difference  - CoordY','Difference  - CoordZ'])
+        FinalList.extend(['PDMS - CoodX',
+        'PDMS - CoordY','PDMS - CoordZ',
+        'AutoPipe - CoordX',
+        'AutoPipe - CoordY',
+        'AutoPipe - CoordZ',
+        'Difference  - CoordX',
+        'Difference  - CoordY',
+        'Difference  - CoordZ'])
 
+        #Tworzenie formy raportu końcowego
         FinalReport = FinalReport[FinalList]
+
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
-        #Wiadomość na koniec generowania raportu
+
+        #Wiadomość końcowa po wygenerowaniu raportu
         messagebox.showinfo('Raport Gotowy!',f'Plik został zapisany pod scieżką: {Path}{Out}')
+#Koniec działania główniej funkcji programu
+#--------------------------------------------------------------------------------------------------------------------------
+#Okienko programu
 
 
-
-    #Tkinter start
-
+    #Tkinter start - definiowanie tytułu i wymiarów okienka
     root = Tk()
     root.title('Report Creator')
     root.geometry('550x175')
    
 
-    #Nazwa raportu PDMS
+    #Okienko do wprowadzania ścieżki do raportu z PDMS'a
     PDMSEntry = Entry(root, width=55,borderwidth=2)
     PDMSEntry.grid(column=1,columnspan=2,row=1)
     PdmsButton = Button(root, text='Get PDMS report directory',command=GetPDMS,width=25).grid(column=0,row=1)
-    #Nazwa raportu Autopipe
+
+
+    #Okienko do wprowadzania ścieżki do raportu z AutoPipe'a
     AutoPipeEntry = Entry(root, width=55,borderwidth=2)
     AutoPipeEntry.grid(column=1,columnspan=2,row=2)
     AutoPipeButton = Button(root, text='Get AutoPipe report directory',command=GetAutoPipe,width=25).grid(column=0,row=2)
-    #Scieżka do plików
+
+
+    #Okienko do wprowadzania ścieżki gdzie zostanie wygenerowany raport
     PathEntry = Entry(root, width=55,borderwidth=2)
     PathEntry.grid(column=1,columnspan=2,row=0)
     PathButton = Button(root, text='Get folder directory',command=GetFolderDir,width=25).grid(column=0,row=0)
-    #Dla wybranej opcji program przelicza Fx Fy Fz tak jak teraz tylko dodaje kolumny dodatkowo dla max i min - 3 odzielne ścieżki
+
+
+    #Dla wybranej opcji program przelicza Fx Fy Fz tak jak teraz tylko dodaje kolumny dodatkowo dla max i min - 3 odzielne check-boxy 
     global Maximum
     global Minimum
     global Extremum
@@ -281,12 +393,9 @@ if __name__ == '__main__':
     Checkbutton(root,text='MAX',variable=Maximum, onvalue='Maximum',offvalue='').grid(column=1,row=3)
     Checkbutton(root,text='EXTREME',variable=Extremum, onvalue='Extremum',offvalue='').grid(column=2,row=3)
 
-    #Kombinacja do wybrania
+    #Przycisk generujący kombinacje do wybrania
     ComWindowButton = Button(root,text='Choose combinations',command=OpenComWindow).grid(column=0,columnspan=3,row=4)
 
-
+    #Przycisk startu programu
     StartButton = Button(root,text='Start',command=startProgram,height=1,width=10).grid(column=0,columnspan=3)
     root.mainloop()
-
-
-
