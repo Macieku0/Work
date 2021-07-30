@@ -19,9 +19,9 @@ WorkSheetName = "PY"
 Col_lett = "C"
 #Range of column with names of files
 ColStart = 7
-ColEnd = 37
+ColEnd = 416
 #Template name
-TemplateName = "karta_wpalki-24.05.2021.xlsx"
+TemplateName = "karta_wpalki-08.07.2021.xlsx"
 #Name of template worksheet 
 TemplateWorkSheetName = "List1"
 #Files save / update directory
@@ -33,7 +33,10 @@ MyColor = "E7CE63"
 #Map of cells connection between list and template
 #TODO #1 Do double translation in excel #2 Map rest of the cells
 Map = {
-'F2':'AC',  #Installation name
+'G1':'AF',
+'G34':'AF',
+'E2':'AC',  #Installation name
+'E35':'AC',  #Installation name
 'Q3':'V',  #New pipeline name
 'A7':'A',   #Next No acc. to tie-in  point list
 'B7':'C',
@@ -63,12 +66,14 @@ Map = {
 'L15':'R',
 'M15':'S',
 'N15':'T',
-'I25':'AD'}
+'D26':'AD',
+'E33':'AG',
+'K33':'AE'}
 
 #Creating a list of all files name
 try:
     source = openpyxl.load_workbook(MainDir + TemplateName)
-    wb = openpyxl.load_workbook(MainDir + ListName)[WorkSheetName]
+    wb = openpyxl.load_workbook(MainDir + ListName)
     worksheet = wb[WorkSheetName]
     i = 0
     for z in range(ColStart,ColEnd):
