@@ -66,6 +66,21 @@ def force(x):
     return x[['FA','FL']]
 
 
+def localDisplacements(x): 
+    if ((float(x[2]) + 360)%360) >= 180:
+        DxCos = (float(x[0]) * float(x[3]))
+        DxSin = (float(x[0]) * float(x[4]))
+        DyCos = (float(x[1]) * float(-x[3]))
+        DySin = (float(x[1]) * float(x[4]))
+    else:
+        DxCos = (float(x[0]) * float(x[3]))
+        DxSin = (float(x[0]) * float(-x[4]))
+        DyCos = (float(x[1]) * float(x[3]))
+        DySin = (float(x[1]) * float(x[4]))
+    x['DA'] = float('{:.2f}'.format(DxCos + DySin))
+    x['DL'] = float('{:.2f}'.format(DxSin + DyCos))
+    return x[['DA','DL']]
+
 #Wstępna lokalizacja do wyboru folderów / plików
 global InitialDir  
 InitialDir = 'C:/'
@@ -188,6 +203,9 @@ if __name__ == '__main__':
         PdmsFile = PdmsFile.replace('degree','',regex=True)
         PdmsFile['ORIANGLE'] = [clean_angles(oriangle) for oriangle in PdmsFile['ORIANGLE']]
         PdmsFile['NAME'] = [clean_name(name) for name in PdmsFile['NAME']]
+        
+        #Lista do sprawdzenia braków
+        pdmsSup = PdmsFile['NAME'].unique()
 
 
         #Obliczanie sinusów i cosinusów
@@ -197,19 +215,18 @@ if __name__ == '__main__':
 
         #Określanie czy rurociąg jest poziomy czy pionowy
         PdmsFile['Vertical'] = ["YES" if (x[:1] in ["D","U"]) else "NO" for x in PdmsFile['ADIR'] ]
-        print(PdmsFile)
 
 
         #Zmiana nazwy kolumny
         PdmsFile.rename(columns={'DTXR':'Description','Position WRT Owner':'WRT','NAME':'Name'},inplace=True)
 
         #Obrabianie Koordynatów
-        PdmsFile[['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']] = [[x[:x.find('mm')],x[x.find('mm')+3:x.find('mm',x.find('mm')+3)],x[x.find('mm',x.find('mm')+3)+3:len(x)-2]] 
+        PdmsFile[['PDMS - CoordX','PDMS - CoordY','PDMS - CoordZ']] = [[x[:x.find('mm')],x[x.find('mm')+3:x.find('mm',x.find('mm')+3)],x[x.find('mm',x.find('mm')+3)+3:len(x)-2]] 
         for x in PdmsFile['WRT']]
-        PdmsFile['PDMS - CoodX'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoodX']]
+        PdmsFile['PDMS - CoordX'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoordX']]
         PdmsFile['PDMS - CoordY'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoordY']]
         PdmsFile['PDMS - CoordZ'] = [x[x.find(' '):] for x in PdmsFile['PDMS - CoordZ']]
-        PdmsFile[['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']] = PdmsFile[['PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ']].astype(float).astype(int)
+        PdmsFile[['PDMS - CoordX','PDMS - CoordY','PDMS - CoordZ']] = PdmsFile[['PDMS - CoordX','PDMS - CoordY','PDMS - CoordZ']].astype(float).astype(int)
 
 
         #Wczytanie pliku autopipe
@@ -217,7 +234,7 @@ if __name__ == '__main__':
 
 
         #Selekcja kolumn
-        AutoPipeFile = AutoPipeFile[['Tag No.','Combination','GlobalFX','GlobalFY','GlobalFZ','CoordX','CoordY','CoordZ']]
+        AutoPipeFile = AutoPipeFile[['Tag No.','Type','Combination','GlobalFX','GlobalFY','GlobalFZ','CoordX','CoordY','CoordZ','GlobalDX','GlobalDY','GlobalDZ']]
 
         #Usuwanie pierwszego wiersza - wiersza z jednostkami
         AutoPipeFile = AutoPipeFile.drop(0)
@@ -243,6 +260,20 @@ if __name__ == '__main__':
         #Selekcja kolumn do matrycy
         AutoPipeFileCoord = AutoPipeFile[['Name','AutoPipe - CoordX','AutoPipe - CoordY','AutoPipe - CoordZ']]
 
+        #Do dalszego przeliczania przesunięć
+        AutoPipeFileDisplecements = AutoPipeFile[['Name','Type','GlobalDX','GlobalDY','GlobalDZ','Combination']]
+        AutoPipeFileDisplecements[['GlobalDX','GlobalDY','GlobalDZ']] = AutoPipeFileDisplecements[['GlobalDX','GlobalDY','GlobalDZ']].astype(float)
+        print(AutoPipeFileDisplecements.info())
+        AutoPipeFileDisplecementsType = AutoPipeFileDisplecements[['Name','Type']].groupby('Name').sum().rename(columns={'Type':'AllType'}).reset_index()
+
+        autoPipeSup = AutoPipeFile['Name'].unique()
+
+        brakPdms = [x for x in autoPipeSup if x not in pdmsSup]
+        brakAutoPipe = [x for x in pdmsSup if x not in autoPipeSup]
+        print('Brak w PDMS')
+        print(brakPdms)
+        print('Brak w AutoPipe')
+        print(brakAutoPipe)
 
         #Sumowanie wartości dla kombinacji obliczeniowej dla każdego zamocowania
         AutoPipeFile = AutoPipeFile.groupby(['Name','Combination']).sum().reset_index()
@@ -303,41 +334,48 @@ if __name__ == '__main__':
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - CombinationFx',f'{x} - FX',f'{x} - CombinationFy',f'{x} - FY',f'{x} - CombinationFz',f'{x} - FZ'])
-        FinalReport = pd.merge(MergedData,PdmsFile[['Name','ORIANGLE','SIN','COS','Description','PDMS - CoodX','PDMS - CoordY','PDMS - CoordZ','Vertical']],on='Name',how='left')
+        FinalReport = pd.merge(MergedData,PdmsFile[['Name','ORIANGLE','SIN','COS','Description','PDMS - CoordX','PDMS - CoordY','PDMS - CoordZ','Vertical']],on='Name',how='left')
 
 
         #Przeliczanie wartości lokalnych dla danych globalnych i kąta nachylenia w płaszczyźnie X i Y
         #MAX,MIN,EXTREMUM Colums
         allDf = []
+        allDf.append(FinalReport)
         if Extremum.get() != '':
             FinalReportEXT = FinalReport.copy()
             FinalReportEXT[['Extremum - FA','Extremum - FL']] = FinalReport[['Extremum - FX','Extremum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportEXT['Extremum - FV'] = FinalReport['Extremum - FZ']
+            FinalReportEXT = FinalReportEXT[['Name','Extremum - FA','Extremum - FL','Extremum - FV']]
             allDf.append(FinalReportEXT)
         if Minimum.get() != '':
             FinalReportMIN = FinalReport.copy()
             FinalReportMIN[['Minimum - FA','Minimum - FL']] = FinalReport[['Minimum - FX','Minimum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMIN['Minimum - FV'] = FinalReport['Minimum - FZ']
+            FinalReportMIN = FinalReportMIN[['Name','Minimum - FA','Minimum - FL','Minimum - FV']]
             allDf.append(FinalReportMIN)
         if Maximum.get() != '':
             FinalReportMAX = FinalReport.copy()
             FinalReportMAX[['Maximum - FA','Maximum - FL']] = FinalReport[['Maximum - FX','Maximum - FY','ORIANGLE','COS','SIN',]].apply(force,axis=1)
             FinalReportMAX['Maximum - FV'] = FinalReport['Maximum - FZ']
+            FinalReportMAX = FinalReportMAX[['Name','Maximum - FA','Maximum - FL','Maximum - FV']]
             allDf.append(FinalReportMAX)
-
         allDf.append(AutoPipeFileCoord)
+
+        verticalPipes = []
         #Łączenie raportów z siłami lokalnymi do głównej tablicy
-        FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['Name'],how='outer'),allDf)
+        FinalReport = reduce(lambda x,y: pd.merge(x,y,on='Name',how='left'),allDf).drop_duplicates('Name')
         for x in Conditions:
             if x != '':
                 FinalList.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
+                verticalPipes.extend([f'{x} - FL',f'{x} - FA',f'{x} - FV'])
 
         #Tworzenie kolumn z deltą koordynatów PDMS vs AutoPipe
-        FinalReport['Difference  - CoordX'] = np.absolute(FinalReport['AutoPipe - CoordX'] - FinalReport['PDMS - CoodX'])
+        FinalReport['Difference  - CoordX'] = np.absolute(FinalReport['AutoPipe - CoordX'] - FinalReport['PDMS - CoordX'])
         FinalReport['Difference  - CoordY'] = np.absolute(FinalReport['AutoPipe - CoordY'] - FinalReport['PDMS - CoordY'])
         FinalReport['Difference  - CoordZ'] = np.absolute(FinalReport['AutoPipe - CoordZ'] - FinalReport['PDMS - CoordZ'])
-        FinalList.extend(['PDMS - CoodX',
-        'PDMS - CoordY','PDMS - CoordZ',
+        FinalList.extend(['PDMS - CoordX',
+        'PDMS - CoordY',
+        'PDMS - CoordZ',
         'AutoPipe - CoordX',
         'AutoPipe - CoordY',
         'AutoPipe - CoordZ',
@@ -345,8 +383,65 @@ if __name__ == '__main__':
         'Difference  - CoordY',
         'Difference  - CoordZ'])
 
+        FinalReport.loc[FinalReport.Vertical == 'YES',verticalPipes] = np.nan
+
+        #Przesunięcia
+
+        AutoPipeFileMinDX = AutoPipeFileDisplecements[['Name','GlobalDX']].groupby('Name').min().reset_index()
+        AutoPipeFileMinDX = pd.merge(AutoPipeFileMinDX,AutoPipeFileDisplecements[['GlobalDX','Combination']],on='GlobalDX',how='left').rename(columns={'Combination':'Min - CombDX','GlobalDX':'Min - DX'}).drop_duplicates('Name')
+        AutoPipeFileMinDY = AutoPipeFileDisplecements[['Name','GlobalDY']].groupby('Name').min().reset_index()
+        AutoPipeFileMinDY = pd.merge(AutoPipeFileMinDY,AutoPipeFileDisplecements[['GlobalDY','Combination']],on='GlobalDY',how='left').rename(columns={'Combination':'Min - CombDY','GlobalDY':'Min - DY'}).drop_duplicates('Name')
+        AutoPipeFileMinDZ = AutoPipeFileDisplecements[['Name','GlobalDZ']].groupby('Name').min().reset_index()
+        AutoPipeFileMinDZ = pd.merge(AutoPipeFileMinDZ,AutoPipeFileDisplecements[['GlobalDZ','Combination']],on='GlobalDZ',how='left').rename(columns={'Combination':'Min - CombDZ','GlobalDZ':'Min - DZ'}).drop_duplicates('Name')
+        allDf = []
+        allDf.extend([AutoPipeFileMinDX,AutoPipeFileMinDY,AutoPipeFileMinDZ])
+        
+        AutoPipeFileMaxDX = AutoPipeFileDisplecements[['Name','GlobalDX']].groupby('Name').max().reset_index()
+        AutoPipeFileMaxDX = pd.merge(AutoPipeFileMaxDX,AutoPipeFileDisplecements[['GlobalDX','Combination']],on='GlobalDX',how='left').rename(columns={'Combination':'Max - CombDX','GlobalDX':'Max - DX'}).drop_duplicates('Name')
+        AutoPipeFileMaxDY = AutoPipeFileDisplecements[['Name','GlobalDY']].groupby('Name').max().reset_index()
+        AutoPipeFileMaxDY = pd.merge(AutoPipeFileMaxDY,AutoPipeFileDisplecements[['GlobalDY','Combination']],on='GlobalDY',how='left').rename(columns={'Combination':'Max - CombDY','GlobalDY':'Max - DY'}).drop_duplicates('Name')
+        AutoPipeFileMaxDZ = AutoPipeFileDisplecements[['Name','GlobalDZ']].groupby('Name').max().reset_index()
+        AutoPipeFileMaxDZ = pd.merge(AutoPipeFileMaxDZ,AutoPipeFileDisplecements[['GlobalDZ','Combination']],on='GlobalDZ',how='left').rename(columns={'Combination':'Max - CombDZ','GlobalDZ':'Max - DZ'}).drop_duplicates('Name')
+
+        allDf.extend([AutoPipeFileMaxDX,AutoPipeFileMaxDY,AutoPipeFileMaxDZ])
+
+        MergedDisplacements = reduce(lambda x,y: pd.merge(x,y,on=['Name'],how='outer'),allDf).drop_duplicates('Name')
+
+        FinalReport = pd.merge(FinalReport,MergedDisplacements[['Name','Min - DX','Min - DY','Min - DZ','Max - DX','Max - DY','Max - DZ']],on='Name',how='left')
+
+        FinalReport = pd.merge(FinalReport,AutoPipeFileDisplecementsType[['Name','AllType']], on='Name',how='left')
+
+        allDf = []
+
+        FinalReportMIN = FinalReport.copy()
+        FinalReportMIN[['Min - DA','Min - DL']] = FinalReportMIN[['Min - DX','Min - DY','ORIANGLE','COS','SIN',]].apply(localDisplacements,axis=1)
+        FinalReportMIN['Min - DV'] = FinalReportMIN['Min - DZ']
+        FinalReportMIN = FinalReportMIN[['Name','Min - DA','Min - DL','Min - DV']]
+
+        FinalReportMAX = FinalReport.copy()
+        FinalReportMAX[['Max - DA','Max - DL']] = FinalReportMAX[['Max - DX','Max - DY','ORIANGLE','COS','SIN',]].apply(localDisplacements,axis=1)
+        FinalReportMAX['Max - DV'] = FinalReportMAX['Max - DZ']
+        FinalReportMAX = FinalReportMAX[['Name','Max - DA','Max - DL','Max - DV']]
+
+
+        allDf.extend([FinalReport,FinalReportMIN,FinalReportMAX])
+
+        FinalReport = reduce(lambda x,y: pd.merge(x,y,on=['Name'],how='left'),allDf).drop_duplicates('Name')
+        FinalList.extend(['Min - DA','Min - DL','Min - DV','Max - DA','Max - DL','Max - DV'])
+
+        FinalReport.loc[FinalReport['AllType'].str.contains('Guide'),'Max - DL'] = 0
+        FinalReport.loc[FinalReport['AllType'].str.contains('Guide'),'Min - DL'] = 0
+        FinalReport.loc[FinalReport['AllType'].str.contains('Line Stp'),'Min - DA'] = 0
+        FinalReport.loc[FinalReport['AllType'].str.contains('Line Stp'),'Max - DA'] = 0
+
+        FinalReport.to_excel(f'{Path}Caly_{Out}')
+
+
         #Tworzenie formy raportu końcowego
         FinalReport = FinalReport[FinalList]
+
+        #Usunięcie duplikatów
+        FinalReport = FinalReport.drop_duplicates('Name').reset_index(drop=True)
 
         # Wygenerowanie raportu końcowego
         FinalReport.to_excel(f'{Path}{Out}')
