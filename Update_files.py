@@ -10,7 +10,7 @@ excel = client.DispatchEx("Excel.Application")
 excel.Visible = 0
 
 #Main files directory
-MainDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_python/"
+MainDir = "C:/Users/macie/Pulpit/WORK\PROCHEM/20210816_LISTA_WPALEN_python/"
 #List name
 ListName = "LISTA_WPALEK.xlsx"
 #Name of list worksheet
@@ -19,13 +19,13 @@ WorkSheetName = "PY"
 Col_lett = "C"
 #Range of column with names of files
 ColStart = 7
-ColEnd = 416
+ColEnd = 444
 #Template name
 TemplateName = "karta_wpalki-08.07.2021.xlsx"
 #Name of template worksheet 
 TemplateWorkSheetName = "List1"
 #Files save / update directory
-FilesDir = "C:/Users/macie/Pulpit/III_CAT_SPRAWDZENIE_SRUB/20210519_LISTA_WPALEN_python/WYDRUKI/"
+FilesDir = "C:/Users/macie/Pulpit/WORK\PROCHEM/20210816_LISTA_WPALEN_python/WYDRUKI/"
 #List of files to create / update
 FilesList = []
 #Change color marker
@@ -52,8 +52,13 @@ Map = {
 'Q7':'AB',
 'R7':'W',
 'S7':'X',
+'G7':'AI',
+'H7':'AJ',
+'I7':'AK',
 'I9':'L',
 'H12':'U',
+'R13':'AH',
+'Q13':'AL',
 'A15':'L',
 'C15':'H',
 'D15':'M',
@@ -68,7 +73,8 @@ Map = {
 'N15':'T',
 'D26':'AD',
 'E33':'AG',
-'K33':'AE'}
+'K33':'AE'
+}
 
 #Creating a list of all files name
 try:
