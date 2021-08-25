@@ -44,7 +44,10 @@ def clean_angles(x):
 
 #Czyszczenie nazw zamocowań z '/'
 def clean_name(x):
-    return x[1:len(x)]
+    if x[0] == "/":
+        return x[1:len(x)]
+    else:
+        return x
 
 
 #Obliczanie sił lokalnych na podstawie wartości globalnych i ułożenia w płaszczyźnie
@@ -214,6 +217,8 @@ if __name__ == '__main__':
 
 
         #Określanie czy rurociąg jest poziomy czy pionowy
+        PdmsFile = PdmsFile[PdmsFile['ADIR'].notnull()]
+        PdmsFile = PdmsFile[PdmsFile['ADIR'].notna()]
         PdmsFile['Vertical'] = ["YES" if (x[:1] in ["D","U"]) else "NO" for x in PdmsFile['ADIR'] ]
 
 
@@ -256,6 +261,7 @@ if __name__ == '__main__':
 
 
         #Czyszczenie nazw z "\"
+        AutoPipeFile['Name'] = AutoPipeFile['Name'].astype(str)
         AutoPipeFile['Name'] = [clean_name(name) for name in AutoPipeFile['Name']]
         #Selekcja kolumn do matrycy
         AutoPipeFileCoord = AutoPipeFile[['Name','AutoPipe - CoordX','AutoPipe - CoordY','AutoPipe - CoordZ']]
