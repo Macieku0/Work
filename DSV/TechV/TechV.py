@@ -191,7 +191,7 @@ def loadingFiles(rawDataPath,listsFilePath,mappingFilePath):
     rawDataFile.cleanNoHeaders()
     rawDataFile = rawDataFile.getDF()
 
-#load lists file
+#Lists File Loading
     listsFilePreFix = pd.read_excel(listsFilePath,sheet_name='Pre-Fix')
     listsFileAirportOrigin = pd.read_excel(listsFilePath,sheet_name='AirportCity_Origin')
     listsFileSL = pd.read_excel(listsFilePath,sheet_name='SL')
@@ -200,6 +200,16 @@ def loadingFiles(rawDataPath,listsFilePath,mappingFilePath):
     listsFileMain =  pd.read_excel(listsFilePath,sheet_name='Main')
     listsFileHolidays = pd.read_excel(listsFilePath,sheet_name='Holidays')
     listsFileDelayCodes = pd.read_excel(listsFilePath,sheet_name='Delay_codes')
+
+# Mapping file Loading
+    mapFile = pd.read_excel(mappingFilePath)
+    # Stworzenie listy kolumn z pliku z QV
+    rawDataColumns = mapFile['Raw_names'].tolist()
+    rawDataColumns = [x.strip() for x in rawDataColumns]
+
+    # Stworzenie listy kolumn o docelowej nazwie      
+    finalDataColumns = mapFile['Final_names'].tolist()
+    finalDataColumns = [x.strip() for x in finalDataColumns]
 
 #Creating dictionaries
     listsFilePreFix['Pre-Fix'] = listsFilePreFix['Pre-Fix'].astype(str)
@@ -217,14 +227,14 @@ def loadingFiles(rawDataPath,listsFilePath,mappingFilePath):
     delayControllableDict = pd.Series(listsFileDelayCodes['Controllable'].values,index=listsFileDelayCodes['Code']).to_dict()
 
 #Return
-    return rawDataFile, prefixDict, countryRegionDict, SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict
+    return rawDataFile, prefixDict, countryRegionDict, SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict,rawDataColumns,finalDataColumns
 
 
 # ============^^^^^^^^^^============LOADING FILES============^^^^^^^^^^============
 
 
 
-def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict):
+def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict,rawDataColumns,finalDataColumns):
 
 
 #Clean for only ASML DATA
@@ -232,6 +242,11 @@ def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,l
 
 #Airline
     rawDataFile['Airline'] = [prefixDict.get(str(x)[:3],'') if x != np.nan else '' for x in rawDataFile['Master']]
+
+# Actual Pickup
+    rawDataFile['Actual Pickup'] = np.where(rawDataFile['Actual Pickup'].isna(),
+                                        rawDataFile['Event (IRP - %)'],
+                                        rawDataFile['Actual Pickup'])
 
 #Orig. Region
     rawDataFile['Orig. Region'] = [countryRegionDict.get(x,'') if x != np.nan else '' for x in rawDataFile['Origin Ctry']]
@@ -320,7 +335,7 @@ def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,l
         (rawDataFile['Actual Pickup'].notnull()) & (~rawDataFile['Service Level'].isin(['EM','PR','RO'])),
         np.datetime64('NaT'),
         np.where(rawDataFile['Service Level'].isin(['PR','RO']),
-        nextBusinessDay(rawDataFile['Actual Pickup'],rawDataFile['Transit Time SLA'],pd.to_datetime(listsFileHolidays[rawDataFile['Dest Ctry']].dropna().values).tolist()) + pd.Timedelta('23 hour 59 min 59 s'),
+        nextBusinessDay(rawDataFile['Actual Pickup'],rawDataFile['Transit Time SLA'],[pd.to_datetime(listsFileHolidays[x].values.reshape(-1)).dropna().tolist() for x in rawDataFile['Dest Ctry']]) + pd.Timedelta('23 hour 59 min 59 s'),
             np.where(rawDataFile['Service Level'].str == 'EM',
                 (rawDataFile['Load ID Date [GMT]'] + pd.to_timedelta((rawDataFile['Transit Time SLA']/24),unit='D')),
                 np.datetime64('NaT'))     
@@ -398,7 +413,7 @@ def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,l
                                                 rawDataFile['Actual Transit Time']*24)
 
 # Pick-Up Q,m,W,d
-    rawDataFile['Quarter (Pick-Up)'] = rawDataFile['Actual Pickup'].dt.to_period('Q').dt.strftime('Q%q')
+    rawDataFile['Quarter (Pick-Up)'] = rawDataFile['Actual Pickup'].dt.to_period('Q').dt.strftime('Q%q-%Y')
     rawDataFile['Month (Pick-Up)'] = rawDataFile['Actual Pickup'].dt.strftime('%y-%m').astype(str)
     rawDataFile['Week (Pick-Up)'] = rawDataFile['Actual Pickup'].dt.strftime('%W').astype(str)
     rawDataFile['Day (Pick-Up)'] = rawDataFile['Actual Pickup'].dt.strftime('%A').astype(str)
@@ -438,13 +453,77 @@ def prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,l
                 1,
                 np.nan))
 
+# Count
+    rawDataFile['Count'] = 1
+
 # Gross
     rawDataFile['Gross'] = np.where(rawDataFile['On Time'] == 'Yes',
                     1,
                     np.nan)
 
+# Rename columns names
+    rawDataFile = rawDataFile.rename(columns={i:j for i,j in zip(rawDataColumns,finalDataColumns)})
+
+# All Columns List in order
+    allColumnList = [
+    "HAWB",
+    "Shipper Name",
+    "Shipper City",
+    "Consignee Name",
+    "Consignee City",
+    "Orig. Country",
+    "Dest. Country",
+    "Inco Terms",
+    "Pcs",
+    "Act. Weight",
+    "Chg. Weight",
+    "Load ID Date [Local]",
+    "On Hand Date [Local Time]",
+    "ETD First Load",
+    "ETA Last Disch",
+    "Actual Time of Departure [Local]",
+    "Actual Time of Arrival [Local]",
+    "MAWB",
+    "Airline",
+    "Orig. Region",
+    "Orig. Airport",
+    "Dest. Region",
+    "Dest. Airport",
+    "Delivery Terms",
+    "Service Level",
+    "Load ID Date [GMT]",
+    "On Hand Date [GMT Time]",
+    "Delivery to  Consignee [Local Time]",
+    "Delivery to Consignee [GMT Time]",
+    "Transit Time SLA",
+    "Due Date [Local]",
+    "Due Date [GMT]",
+    "Actual Transit Time",
+    "Hours/ Days Late",
+    "On Time",
+    "Region",
+    "Country-to-Country",
+    "Airport-to-Airport",
+    "Weight Break",
+    "PU - ATD",
+    "ATD - ATA",
+    "ATA - DEL",
+    "Total Transit Hours",
+    "Quarter (Pick-Up)",
+    "Month (Pick-Up)",
+    "Week (Pick-Up)",
+    "Day (Pick-Up)",
+    "Delay Code",
+    "Delay Description",
+    "Controllable",
+    "Nett",
+    "Gross",
+    'Count'
+    ]
+
+
 # Return
-    return rawDataFile
+    return rawDataFile[allColumnList]
 
 
 
@@ -461,12 +540,12 @@ def startProgram():
     break1 = (timer()-start)
     print(f'Ścieżki pobrane w {break1} sekund')
 
-    rawDataFile, prefixDict ,countryRegionDict, SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict = loadingFiles(rawDataPath,listsFilePath,mappingFilePath)
+    rawDataFile, prefixDict ,countryRegionDict, SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict,rawDataColumns,finalDataColumns = loadingFiles(rawDataPath,listsFilePath,mappingFilePath)
 
     break2 = (timer()-start)
     print(f'Pliki załadowane w {break2} sekund')
 
-    rawDataFile = prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict)
+    rawDataFile = prepareRawDataASML(rawDataFile,prefixDict,countryRegionDict,SLDict,gmtDict,listsFileHolidays,delayDescriptionDict,delayControllableDict,rawDataColumns,finalDataColumns)
 
     break3 = (timer()-start)
     print(f'Plik obrobiony w {break3} sekund')
