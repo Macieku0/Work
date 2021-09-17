@@ -47,21 +47,26 @@ if __name__ == '__main__':
 
     st.title('Progress report')
 
+    st.sidebar.header('User input features')
+    
+
     i = 1
     lista_zon = pipe['Zone'].unique()
+    wybranazona = st.sidebar.multiselect("Zony",lista_zon)
     for zone in lista_zon:
         template_sheet = template(zone)
         globals()[f'Z_{zone}'],globals()[f'Z_{zone}_suma'] = countProgress(pipe,zone)
         globals()[f'Z_{zone}'] = template_sheet.append(globals()[f'Z_{zone}']).groupby(['Zone','Status','Progress']).max().reset_index()
-        if st.checkbox(zone):
-            st.write(globals()[f'Z_{zone}'])
-            st.text(f'Suma progresu dla zony {zone} wynosi {globals()[f"Z_{zone}_suma"]}')
-            globals()[f'Z_{zone}'] = globals()[f'Z_{zone}'][['Status','Value']].set_index('Status')
-            chart_data = pd.DataFrame(
-            globals()[f'Z_{zone}'])
+        for zona in wybranazona:
+            if zona == zone:
+                st.write(globals()[f'Z_{zone}'])
+                st.text(f'Suma progresu dla zony {zone} wynosi {globals()[f"Z_{zone}_suma"]}')
+                globals()[f'Z_{zone}'] = globals()[f'Z_{zone}'][['Status','Value']].set_index('Status')
+                chart_data = pd.DataFrame(
+                globals()[f'Z_{zone}'])
 
-            st.bar_chart(chart_data)
-        i +=12
+                st.bar_chart(chart_data)
+            i +=12
 
     
     if st.checkbox('Zbiorcze'):
